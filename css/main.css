@@ -1,0 +1,346 @@
+/* GENERAL STYLES & CSS VARIABLES */
+/* Modern Minimalist Design System */
+:root {
+    /* Primary Colors - Modern Indigo/Slate palette */
+    --primary-color: #6366F1; /* Indigo-500 */
+    --primary-color-hover: #4F46E5; /* Indigo-600 */
+    --primary-color-light: #EEF2FF; /* Indigo-50 */
+    
+    /* Neutral Colors - Refined slate palette */
+    --secondary-color: #64748B; /* Slate-500 */
+    --background-color: #F8FAFC; /* Slate-50 */
+    --surface-color: #FFFFFF;
+    --border-color: #E2E8F0; /* Slate-200 */
+    --border-color-light: #F1F5F9; /* Slate-100 */
+    
+    /* Text Colors */
+    --text-primary: #0F172A; /* Slate-900 */
+    --text-secondary: #64748B; /* Slate-500 */
+    --text-tertiary: #94A3B8; /* Slate-400 */
+    --text-on-primary: #FFFFFF;
+
+    /* Status Colors - Modern and distinct */
+    --status-completed-bg: #ECFDF5; /* Emerald-50 */
+    --status-completed-text: #047857; /* Emerald-700 */
+    --status-completed-border: #A7F3D0; /* Emerald-200 */
+    
+    --status-processing-bg: #EEF2FF; /* Indigo-50 */
+    --status-processing-text: #4338CA; /* Indigo-700 */
+    --status-processing-border: #C7D2FE; /* Indigo-200 */
+    
+    --status-pending-bg: #FFFBEB; /* Amber-50 */
+    --status-pending-text: #B45309; /* Amber-700 */
+    --status-pending-border: #FDE68A; /* Amber-200 */
+    
+    --status-failed-bg: #FEF2F2; /* Red-50 */
+    --status-failed-text: #B91C1C; /* Red-700 */
+    --status-failed-border: #FECACA; /* Red-200 */
+
+    /* Icon Status Colors */
+    --status-present-icon: #10B981; /* Emerald-500 */
+    --status-missing-icon: #EF4444; /* Red-500 */
+
+    /* Spacing System */
+    --spacing-xs: 4px;
+    --spacing-sm: 8px;
+    --spacing-md: 16px;
+    --spacing-lg: 24px;
+    --spacing-xl: 32px;
+    --spacing-2xl: 48px;
+
+    /* Border Radius - More rounded for modern look */
+    --border-radius-sm: 6px;
+    --border-radius-md: 10px;
+    --border-radius-lg: 16px;
+    --border-radius-xl: 24px;
+    --border-radius-full: 9999px;
+
+    /* Shadows - Subtle and refined */
+    --box-shadow-sm: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
+    --box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.1), 0 1px 2px -1px rgba(0, 0, 0, 0.1);
+    --box-shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -2px rgba(0, 0, 0, 0.1);
+    --box-shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -4px rgba(0, 0, 0, 0.1);
+    --box-shadow-xl: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 8px 10px -6px rgba(0, 0, 0, 0.1);
+    
+    /* Transition */
+    --transition-fast: 150ms ease;
+    --transition-normal: 200ms ease;
+    --transition-slow: 300ms ease;
+}
+
+* {
+    box-sizing: border-box;
+    margin: 0;
+    padding: 0;
+}
+
+body {
+    font-family: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    background-color: var(--background-color);
+    color: var(--text-primary);
+    line-height: 1.6;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+}
+
+/* Import Inter font */
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
+
+h1, h2, h3, h4, h5, h6 {
+    color: var(--text-primary);
+    font-weight: 600;
+    letter-spacing: -0.02em;
+}
+
+h1 { font-size: 2rem; }
+h2 { font-size: 1.5rem; }
+h3 { font-size: 1.25rem; }
+
+p {
+    color: var(--text-secondary);
+}
+
+a {
+    color: var(--primary-color);
+    text-decoration: none;
+    transition: color var(--transition-fast);
+}
+
+a:hover {
+    color: var(--primary-color-hover);
+}
+
+/* UTILITY CLASSES */
+.btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: var(--spacing-sm);
+    padding: 10px 18px;
+    border: 1px solid transparent;
+    border-radius: var(--border-radius-md);
+    font-size: 0.875rem;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all var(--transition-fast);
+    letter-spacing: -0.01em;
+}
+
+.btn:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+}
+
+.btn-primary {
+    background-color: var(--primary-color);
+    color: var(--text-on-primary);
+    border-color: var(--primary-color);
+    box-shadow: 0 1px 2px 0 rgba(99, 102, 241, 0.2);
+}
+
+.btn-primary:not(:disabled):hover {
+    background-color: var(--primary-color-hover);
+    transform: translateY(-1px);
+    box-shadow: 0 4px 8px 0 rgba(99, 102, 241, 0.3);
+}
+
+.btn-secondary {
+    background-color: var(--surface-color);
+    color: var(--text-primary);
+    border-color: var(--border-color);
+}
+
+.btn-secondary:not(:disabled):hover {
+    background-color: var(--background-color);
+    border-color: var(--secondary-color);
+}
+
+.btn-ghost {
+    background-color: transparent;
+    color: var(--text-secondary);
+    border-color: transparent;
+}
+
+.btn-ghost:not(:disabled):hover {
+    background-color: var(--background-color);
+    color: var(--text-primary);
+}
+
+/* STATUS BADGES - Modern pill style */
+.status-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 4px 12px;
+    font-size: 0.75rem;
+    font-weight: 500;
+    border-radius: var(--border-radius-full);
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    border: 1px solid transparent;
+}
+
+.status-badge::before {
+    content: '';
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    background-color: currentColor;
+}
+
+.status-completed {
+    background-color: var(--status-completed-bg);
+    color: var(--status-completed-text);
+    border-color: var(--status-completed-border);
+}
+
+.status-processing {
+    background-color: var(--status-processing-bg);
+    color: var(--status-processing-text);
+    border-color: var(--status-processing-border);
+}
+
+.status-pending {
+    background-color: var(--status-pending-bg);
+    color: var(--status-pending-text);
+    border-color: var(--status-pending-border);
+}
+
+.status-failed {
+    background-color: var(--status-failed-bg);
+    color: var(--status-failed-text);
+    border-color: var(--status-failed-border);
+}
+
+.logo {
+    color: var(--primary-color);
+}
+
+/* MAIN HEADER - Clean and minimal */
+.main-header {
+    background-color: var(--surface-color);
+    border-bottom: 1px solid var(--border-color);
+    padding: 0 var(--spacing-lg);
+    height: 64px;
+    position: sticky;
+    top: 0;
+    z-index: 50;
+}
+
+.header-content {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    max-width: 1400px;
+    margin: 0 auto;
+    height: 100%;
+}
+
+.logo-container {
+    display: flex;
+    align-items: center;
+    gap: var(--spacing-sm);
+    font-weight: 600;
+    font-size: 1.25rem;
+    color: var(--text-primary);
+}
+
+.logo-container span {
+    background: linear-gradient(135deg, var(--primary-color) 0%, #8B5CF6 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+}
+
+.main-header nav button {
+    background: none;
+    border: none;
+    color: var(--text-secondary);
+    cursor: pointer;
+    padding: var(--spacing-sm) var(--spacing-md);
+    font-size: 0.875rem;
+    border-radius: var(--border-radius-md);
+    transition: all var(--transition-fast);
+}
+
+.main-header nav button:hover {
+    background-color: var(--background-color);
+    color: var(--text-primary);
+}
+
+/* TOAST NOTIFICATIONS - Modern style */
+#toast-container {
+    position: fixed;
+    top: var(--spacing-lg);
+    right: var(--spacing-lg);
+    z-index: 1000;
+    display: flex;
+    flex-direction: column;
+    gap: var(--spacing-md);
+}
+
+.toast {
+    padding: var(--spacing-md) var(--spacing-lg);
+    border-radius: var(--border-radius-md);
+    box-shadow: var(--box-shadow-lg);
+    opacity: 0;
+    transform: translateX(100%);
+    animation: slideIn 0.4s ease forwards, slideOut 0.4s 3.5s ease forwards;
+    display: flex;
+    align-items: center;
+    gap: var(--spacing-sm);
+    min-width: 280px;
+    background-color: var(--surface-color);
+    color: var(--text-primary);
+    border: 1px solid var(--border-color);
+    font-size: 0.875rem;
+}
+
+.toast-success {
+    background-color: var(--status-completed-bg);
+    color: var(--status-completed-text);
+    border-color: var(--status-completed-border);
+}
+
+.toast-error {
+    background-color: var(--status-failed-bg);
+    color: var(--status-failed-text);
+    border-color: var(--status-failed-border);
+}
+
+.toast-info {
+    background-color: var(--status-processing-bg);
+    color: var(--status-processing-text);
+    border-color: var(--status-processing-border);
+}
+
+@keyframes slideIn {
+    to {
+        opacity: 1;
+        transform: translateX(0);
+    }
+}
+
+@keyframes slideOut {
+    from {
+        opacity: 1;
+        transform: translateX(0);
+    }
+    to {
+        opacity: 0;
+        transform: translateX(100%);
+    }
+}
+
+/* Form inputs base styling */
+input, select, textarea {
+    font-family: inherit;
+    font-size: 0.875rem;
+}
+
+input:focus, select:focus, textarea:focus {
+    outline: none;
+    border-color: var(--primary-color);
+    box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.1);
+}
+

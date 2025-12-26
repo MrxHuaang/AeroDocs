@@ -1,0 +1,172 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Project View - AeroDocs</title>
+    <link rel="stylesheet" href="css/main.css" />
+    <link rel="stylesheet" href="css/project.css" />
+  </head>
+  <body>
+    <div id="toast-container"></div>
+
+    <header class="main-header">
+      <div class="header-content">
+        <div class="logo-container">
+          <svg
+            class="logo"
+            xmlns="http://www.w3.org/2000/svg"
+            width="32"
+            height="32"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="2"
+            stroke-linecap="round"
+            stroke-linejoin="round"
+          >
+            <path d="M22 12h-4l-3 9L9 3l-3 9H2"></path>
+          </svg>
+          <a href="2_dashboard.html" class="breadcrumb-link">Projects</a>
+          <span class="breadcrumb-separator">/</span>
+          <span id="project-name-breadcrumb" class="breadcrumb-current"></span>
+        </div>
+        <nav class="header-nav">
+          <button
+            id="export-report-btn"
+            class="btn btn-secondary btn-sm"
+            title="Export Report"
+          >
+            <svg
+              xmlns="http://www.w3.org/2000/svg"
+              width="16"
+              height="16"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="2"
+              stroke-linecap="round"
+              stroke-linejoin="round"
+            >
+              <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+              <polyline points="7 10 12 15 17 10"></polyline>
+              <line x1="12" y1="15" x2="12" y2="3"></line>
+            </svg>
+            Export Report
+          </button>
+          <button id="logout-button" class="btn-ghost">Logout</button>
+        </nav>
+      </div>
+    </header>
+
+    <main class="project-container">
+      <!-- Left Panel: Checklist -->
+      <div class="checklist-panel">
+        <div class="panel-header">
+          <h3>ICAO Checklist</h3>
+          <div class="panel-actions">
+            <span id="checklist-summary" class="checklist-summary"></span>
+          </div>
+        </div>
+        <div id="checklist-container" class="checklist-tree">
+          <!-- Checklist will be rendered here by JavaScript -->
+        </div>
+      </div>
+
+      <!-- Right Panel: Chatbot -->
+      <div class="chat-panel">
+        <div class="panel-header">
+          <h3>AI Assistant</h3>
+          <div class="panel-actions">
+            <button id="export-chat-btn" class="btn-icon" title="Export Chat">
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                width="16"
+                height="16"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="2"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+              >
+                <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+                <polyline points="7 10 12 15 17 10"></polyline>
+                <line x1="12" y1="15" x2="12" y2="3"></line>
+              </svg>
+            </button>
+            <button
+              id="clear-chat-btn"
+              class="btn-icon"
+              title="Clear Chat History"
+            >
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                width="16"
+                height="16"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="2"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+              >
+                <polyline points="3 6 5 6 21 6"></polyline>
+                <path
+                  d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"
+                ></path>
+              </svg>
+            </button>
+          </div>
+        </div>
+        <div class="chat-window">
+          <div id="chat-messages" class="chat-messages">
+            <!-- Chat messages will be injected here -->
+          </div>
+          <div
+            id="ai-thinking-indicator"
+            class="ai-message"
+            style="display: none"
+          >
+            <div class="message-content">
+              <div class="typing-indicator">
+                <span></span><span></span><span></span>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="chat-input-area">
+          <form id="chat-form" class="chat-form">
+            <input
+              type="text"
+              id="chat-input"
+              placeholder="Ask about this project..."
+              autocomplete="off"
+            />
+            <button type="submit" id="send-btn" aria-label="Send Message">
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                width="20"
+                height="20"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="2"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+              >
+                <line x1="22" y1="2" x2="11" y2="13"></line>
+                <polygon points="22 2 15 22 11 13 2 9 22 2"></polygon>
+              </svg>
+            </button>
+          </form>
+        </div>
+      </div>
+    </main>
+
+    <script src="js/mock-data.js"></script>
+    <script src="js/main.js"></script>
+    <script src="js/auth.js"></script>
+    <script src="js/project.js"></script>
+  </body>
+</html>
