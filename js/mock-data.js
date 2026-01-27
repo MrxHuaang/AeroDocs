@@ -2,50 +2,11 @@
 
 /**
  * Mock data for the projects dashboard.
- * In a real application, this would come from an API endpoint like /api/projects
+ * IMPORTANT: This array is intentionally empty.
+ * Projects should only come from Firebase.
+ * Do not add test projects here for production use.
  */
-window.mockProjects = [
-    {
-        id: 'proj-123',
-        name: 'Engine ESN 1838432',
-        type: 'engine',
-        serialNumber: '1838432',
-        tags: ['american-airlines'],
-        status: 'COMPLETED',
-        lastUpdated: '2 days ago',
-        createdAt: new Date('2024-12-23T10:00:00')
-    },
-    {
-        id: 'proj-456',
-        name: 'Aircraft MSN 2341234',
-        type: 'aircraft',
-        serialNumber: '2341234',
-        tags: ['latam-airlines'],
-        status: 'PROCESSING',
-        lastUpdated: '1 week ago',
-        createdAt: new Date('2024-12-18T14:30:00')
-    },
-    {
-        id: 'proj-789',
-        name: 'Engine ESN 9876543',
-        type: 'engine',
-        serialNumber: '9876543',
-        tags: ['united-airlines', 'delta-airlines'],
-        status: 'PENDING_REVIEW',
-        lastUpdated: '4 hours ago',
-        createdAt: new Date('2024-12-25T08:00:00')
-    },
-    {
-        id: 'proj-101',
-        name: 'Aircraft MSN 5551234',
-        type: 'aircraft',
-        serialNumber: '5551234',
-        tags: ['lufthansa'],
-        status: 'FAILED',
-        lastUpdated: '1 day ago',
-        createdAt: new Date('2024-12-24T16:45:00')
-    },
-];
+window.mockProjects = [];
 
 
 

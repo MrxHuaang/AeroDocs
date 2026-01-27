@@ -322,9 +322,14 @@
         `;
 
         // Click on card body navigates to project
+        // Use hash (#) instead of query params (?) because npx serve strips query params
         card.addEventListener('click', (e) => {
+            // Prevent default behavior to avoid any page reload
+            e.preventDefault();
+            
             if (!e.target.closest('.project-card-actions')) {
-                window.location.href = `3_project.html?id=${project.id}`;
+                console.log('[Dashboard] Navigating to project:', project.id);
+                window.location.href = `3_project.html#id=${project.id}`;
             }
         });
 

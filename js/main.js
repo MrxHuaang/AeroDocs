@@ -12,16 +12,29 @@
      * @param {string[]} protectedRoutes - An array of page filenames that require authentication.
      */
     function protectRoutes(protectedRoutes) {
-        const currentPage = window.location.pathname.split('/').pop();
+        // Get current page from pathname, handling both / and \ path separators
+        let currentPage = window.location.pathname.split('/').pop();
+        // Handle empty page name (when accessing root or with trailing slash)
+        if (!currentPage || currentPage === '') {
+            currentPage = 'index.html';
+        }
+        
+        console.log('[Auth] Current page:', currentPage);
+        console.log('[Auth] Protected routes:', protectedRoutes);
         
         // Check if the current page is a protected route
         if (protectedRoutes.includes(currentPage)) {
             // Check for authentication state in sessionStorage
             const isAuthenticated = sessionStorage.getItem('isAuthenticated');
+            console.log('[Auth] Is authenticated:', isAuthenticated);
+            
             if (isAuthenticated !== 'true') {
-                console.log('User not authenticated. Redirecting to login.');
+                console.log('[Auth] User not authenticated. Redirecting to login.');
                 // Use a relative path for robustness
                 window.location.href = '1_login.html';
+                return; // Stop execution to prevent further script loading issues
+            } else {
+                console.log('[Auth] User authenticated, proceeding with page load.');
             }
         }
     }

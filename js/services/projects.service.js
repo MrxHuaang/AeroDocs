@@ -64,7 +64,7 @@ class ProjectsService {
     }
 
     /**
-     * Load all projects from Firestore
+     * Load all projects from Firestore with timeout and fallback
      */
     async loadProjects() {
         this.setLoading(true);
@@ -72,10 +72,26 @@ class ProjectsService {
         try {
             const db = this.firebaseService.getFirestore();
             if (!db) {
-                throw new Error('Firestore not initialized');
+                console.warn('Firestore not initialized');
+                this.setLoading(false);
+                if (this.onError) {
+                    this.onError('Firebase no está disponible. Verifica tu conexión a internet.');
+                }
+                return [];
             }
 
-            const snapshot = await db.collection(this.collectionName).get();
+            // Create a timeout promise (15 seconds - increased for slow connections)
+            const timeoutPromise = new Promise((_, reject) => {
+                setTimeout(() => reject(new Error('Firebase timeout')), 15000);
+            });
+
+            console.log('[Projects] Loading projects from Firebase...');
+
+            // Race between Firebase query and timeout
+            const snapshot = await Promise.race([
+                db.collection(this.collectionName).get(),
+                timeoutPromise
+            ]);
             
             this.projects = [];
             snapshot.forEach(doc => {
@@ -86,7 +102,7 @@ class ProjectsService {
             // Sort by createdAt descending (newest first)
             this.projects.sort((a, b) => b.createdAt - a.createdAt);
 
-            console.log(`Loaded ${this.projects.length} projects from Firestore`);
+            console.log(`[Projects] Loaded ${this.projects.length} projects from Firestore`);
             
             this.setLoading(false);
             
@@ -100,8 +116,13 @@ class ProjectsService {
             console.error('Error loading projects:', error);
             this.setLoading(false);
             
+            // Show a user-friendly error message
             if (this.onError) {
-                this.onError('Error loading projects from database');
+                if (error.message === 'Firebase timeout') {
+                    this.onError('Firebase tardó demasiado en responder. Verifica tu conexión a internet.');
+                } else {
+                    this.onError('Error al cargar proyectos. Verifica tu conexión.');
+                }
             }
             
             return [];
@@ -109,17 +130,35 @@ class ProjectsService {
     }
 
     /**
-     * Get a single project by ID
+     * Get a single project by ID with timeout
      */
     async getProject(projectId) {
         try {
             const db = this.firebaseService.getFirestore();
-            const doc = await db.collection(this.collectionName).doc(projectId).get();
+            if (!db) {
+                console.warn('Firestore not initialized');
+                return null;
+            }
+
+            // Create a timeout promise (15 seconds - consistent with loadProjects)
+            const timeoutPromise = new Promise((_, reject) => {
+                setTimeout(() => reject(new Error('Firebase timeout')), 15000);
+            });
+
+            console.log('[Projects] Loading project from Firebase:', projectId);
+
+            // Race between Firebase query and timeout
+            const doc = await Promise.race([
+                db.collection(this.collectionName).doc(projectId).get(),
+                timeoutPromise
+            ]);
             
             if (doc.exists) {
+                console.log('[Projects] Found project in Firebase');
                 return this.parseProject(doc);
             }
             
+            console.log('[Projects] Project not found in Firebase:', projectId);
             return null;
         } catch (error) {
             console.error('Error getting project:', error);

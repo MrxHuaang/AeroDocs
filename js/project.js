@@ -8,6 +8,9 @@
 (function() {
     'use strict';
 
+    // Debug logging for URL parsing (can be removed in production)
+    console.log('[Project] Loading page with URL:', window.location.href);
+
     // ========================================
     // DOM ELEMENTS
     // ========================================
@@ -41,8 +44,33 @@
     // UTILITY FUNCTIONS
     // ========================================
     function getProjectId() {
+        // First try to get ID from hash (format: #id=xxx)
+        const hash = window.location.hash;
+        if (hash) {
+            if (hash.startsWith('#id=')) {
+                const id = hash.substring(4);
+                console.log('[Project] Got ID from hash:', id);
+                return id;
+            }
+            // Try URLSearchParams format
+            const hashParams = new URLSearchParams(hash.substring(1));
+            const hashId = hashParams.get('id');
+            if (hashId) {
+                console.log('[Project] Got ID from hash params:', hashId);
+                return hashId;
+            }
+        }
+        
+        // Fallback to query params (in case someone uses ?id=xxx directly)
         const params = new URLSearchParams(window.location.search);
-        return params.get('id');
+        const queryId = params.get('id');
+        if (queryId) {
+            console.log('[Project] Got ID from query params:', queryId);
+            return queryId;
+        }
+        
+        console.log('[Project] No ID found in URL');
+        return null;
     }
 
     async function getProjectInfoFromFirebase(id) {
@@ -363,7 +391,11 @@
     async function initializePage() {
         projectId = getProjectId();
         
+        console.log('[Project] Initializing page with projectId:', projectId);
+        console.log('[Project] Current URL:', window.location.href);
+        
         if (!projectId) {
+            console.warn('[Project] No project ID found in URL, redirecting to dashboard');
             window.location.href = '2_dashboard.html';
             return;
         }
