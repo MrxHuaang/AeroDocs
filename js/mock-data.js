@@ -71,19 +71,43 @@ window.mockChecklistData = {
             status: 'Missing',
             icaoRef: '8.3.7',
             children: (function() {
-                const files = [];
+                const folders = [];
+                // PDF file names for different folder types
+                const pdfNames = {
+                    1: ['Engine_Maintenance_Log.pdf', 'Initial_Inspection_Report.pdf'],
+                    3: ['Overhaul_Certificate.pdf', 'Parts_Replacement_Record.pdf'],
+                    4: ['Service_Bulletin_Compliance.pdf', 'Airworthiness_Directive.pdf'],
+                    5: ['Shop_Visit_Report.pdf'],
+                    7: ['Life_Limited_Parts_Status.pdf', 'Component_History.pdf'],
+                    8: ['Test_Cell_Run_Report.pdf', 'Performance_Data.pdf'],
+                    10: ['Modification_Status.pdf'],
+                    12: ['Last_Shop_Visit_Summary.pdf', 'Workscope_Document.pdf'],
+                    14: ['Oil_Analysis_Report.pdf'],
+                    16: ['Engine_Build_Record.pdf', 'Assembly_Documentation.pdf'],
+                    18: ['Borescope_Inspection.pdf', 'Visual_Inspection_Report.pdf'],
+                    20: ['Trend_Monitoring_Data.pdf'],
+                    22: ['Engine_Logbook_Extract.pdf', 'Time_Cycles_Summary.pdf']
+                };
                 for (let i = 1; i <= 22; i++) {
                     const num = i.toString().padStart(3, '0');
-                    // Some files are missing, most are present
+                    // Some folders are missing, most are present
                     const status = (i === 2 || i === 15) ? 'Missing' : 'Present';
-                    files.push({
-                        name: `F ${num}`,
-                        type: 'File',
-                        status: status,
+                    // Add PDF children for some folders, empty for others
+                    const pdfChildren = pdfNames[i] ? pdfNames[i].map(pdfName => ({
+                        name: pdfName,
+                        type: 'PDF',
+                        status: 'Present',
                         icaoRef: `8.3.7.${i}`
+                    })) : [];
+                    folders.push({
+                        name: `F ${num}`,
+                        type: 'Folder',
+                        status: status,
+                        icaoRef: `8.3.7.${i}`,
+                        children: pdfChildren
                     });
                 }
-                return files;
+                return folders;
             })()
         },
         { 
@@ -92,17 +116,40 @@ window.mockChecklistData = {
             status: 'Present',
             icaoRef: '8.3.7',
             children: (function() {
-                const files = [];
+                const folders = [];
+                // PDF file names for different folder types
+                const pdfNames = {
+                    1: ['Engine_Maintenance_Log.pdf', 'Initial_Inspection_Report.pdf'],
+                    2: ['Time_Since_Overhaul.pdf', 'Cycle_Count_Record.pdf'],
+                    4: ['Service_Bulletin_Compliance.pdf'],
+                    6: ['LLP_Tracking_Sheet.pdf', 'Parts_Status.pdf'],
+                    8: ['Test_Cell_Run_Report.pdf', 'Performance_Data.pdf'],
+                    9: ['Modification_History.pdf'],
+                    11: ['Oil_Consumption_Log.pdf', 'Fluid_Analysis.pdf'],
+                    13: ['Shop_Visit_Report.pdf'],
+                    15: ['Borescope_Images.pdf', 'Inspection_Findings.pdf'],
+                    17: ['Engine_Build_Record.pdf'],
+                    19: ['Trend_Monitoring_Data.pdf', 'EGT_Margin_Report.pdf'],
+                    21: ['Certification_Documents.pdf', 'Release_Certificate.pdf']
+                };
                 for (let i = 1; i <= 22; i++) {
                     const num = i.toString().padStart(3, '0');
-                    files.push({
-                        name: `F ${num}`,
-                        type: 'File',
+                    // Add PDF children for some folders, empty for others
+                    const pdfChildren = pdfNames[i] ? pdfNames[i].map(pdfName => ({
+                        name: pdfName,
+                        type: 'PDF',
                         status: 'Present',
                         icaoRef: `8.3.7.${i}`
+                    })) : [];
+                    folders.push({
+                        name: `F ${num}`,
+                        type: 'Folder',
+                        status: 'Present',
+                        icaoRef: `8.3.7.${i}`,
+                        children: pdfChildren
                     });
                 }
-                return files;
+                return folders;
             })()
         },
         { name: 'G. APU', type: 'APU', status: 'Present', icaoRef: '8.3.8', children: [] },

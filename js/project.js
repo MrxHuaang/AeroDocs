@@ -110,18 +110,22 @@
         li.className = 'checklist-item';
         li.dataset.name = item.name;
 
+        // Check if this is an F 00X folder (expandable with PDF files)
+        const isFFolder = item.type === 'Folder' && /^F \d{3}$/.test(item.name);
         const isParent = item.children && item.children.length > 0;
         const isFile = item.type === 'File';
+        const isPDF = item.type === 'PDF';
         
         const statusIcon = item.status === 'Present' 
             ? `<svg class="status-icon present" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"></path></svg>`
             : `<svg class="status-icon missing" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>`;
         
-        const toggleIcon = isParent 
+        // Show toggle icon for parents with children OR F 00X folders (even if empty)
+        const toggleIcon = (isParent || isFFolder)
             ? `<svg class="toggle-icon" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"></polyline></svg>` 
             : '<span class="toggle-icon" style="width: 16px;"></span>';
 
-        const fileActionsHtml = isFile ? `
+        const fileActionsHtml = (isFile || isPDF) ? `
             <div class="file-actions">
                 <button class="file-action-btn" title="Download" data-action="download">
                     <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
@@ -159,9 +163,10 @@
         ` : '';
 
         const itemHeader = document.createElement('div');
-        itemHeader.className = 'item-header' + (isFile ? ' file-item' : '');
-        if (isFile) itemHeader.draggable = true;
-        
+        itemHeader.className = 'item-header' + ((isFile || isPDF) ? ' file-item' : '');
+        if (isFile || isPDF) {
+            itemHeader.draggable = true;
+        }
         itemHeader.innerHTML = `
             ${toggleIcon}
             ${statusIcon}
@@ -169,9 +174,10 @@
             ${fileActionsHtml}
         `;
 
-        // File action handlers
-        if (isFile) {
-            itemHeader.querySelectorAll('.file-action-btn[data-action]').forEach(btn => {
+        // Add click handlers for file actions
+        if (isFile || isPDF) {
+            const actionBtns = itemHeader.querySelectorAll('.file-action-btn[data-action]');
+            actionBtns.forEach(btn => {
                 btn.addEventListener('click', (e) => {
                     e.stopPropagation();
                     handleFileAction(btn.dataset.action, item);
@@ -200,13 +206,37 @@
             itemDetails.classList.toggle('visible');
         });
 
-        // Children
+        // If parent with children, create children container
         if (isParent) {
             const childrenContainer = document.createElement('ul');
             childrenContainer.className = 'item-children';
             item.children.forEach(child => {
                 childrenContainer.appendChild(createChecklistItemElement(child, childrenContainer));
             });
+            li.appendChild(childrenContainer);
+            
+            itemHeader.addEventListener('click', () => {
+                childrenContainer.classList.toggle('expanded');
+                itemHeader.querySelector('.toggle-icon').classList.toggle('expanded');
+            });
+        } 
+        // If F 00X folder without children, show "no files" message
+        else if (isFFolder && (!item.children || item.children.length === 0)) {
+            const childrenContainer = document.createElement('ul');
+            childrenContainer.className = 'item-children';
+            
+            const emptyMessage = document.createElement('li');
+            emptyMessage.className = 'checklist-item empty-folder-message';
+            emptyMessage.innerHTML = `
+                <div class="item-header empty-message">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="color: var(--text-tertiary); margin-right: 8px;">
+                        <path d="M13 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V9z"></path>
+                        <polyline points="13 2 13 9 20 9"></polyline>
+                    </svg>
+                    <span style="color: var(--text-tertiary); font-style: italic;">No hay archivos disponibles</span>
+                </div>
+            `;
+            childrenContainer.appendChild(emptyMessage);
             li.appendChild(childrenContainer);
             
             itemHeader.addEventListener('click', () => {
