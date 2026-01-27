@@ -94,6 +94,57 @@
         'Delta Airlines', 'Lufthansa', 'Emirates', 'British Airways', 'Air France'
     ];
 
+    // Firebase services
+    let projectsService = null;
+
+    // ========================================
+    // N8N WEBHOOK CONFIGURATION
+    // ========================================
+    const N8N_FILE_WEBHOOK_URL = 'https://n8n.srv1026018.hstgr.cloud/webhook/849ca1f9-a9b5-4630-b533-42b770a8e9b0';
+
+    /**
+     * Calls the n8n webhook to process the uploaded file
+     * @param {string} objectName - The file name in Google Cloud Storage
+     * @param {string} proyecto - Project name (e.g., "aircraft MSN 577178")
+     * @param {string} type - Project type ("engine" or "Aircraft")
+     * @param {string} serie - Serial number
+     * @param {string} tags - Comma-separated tags
+     * @returns {Promise} - Resolves with webhook response
+     */
+    async function callN8nFileWebhook(objectName, proyecto, type, serie, tags) {
+        const payload = {
+            object_name: objectName,
+            proyecto: proyecto,
+            type: type === 'aircraft' ? 'aircraft' : 'engine',
+            serie: serie,
+            tags: tags
+        };
+
+        console.log('Calling n8n file webhook:', payload);
+
+        try {
+            const response = await fetch(N8N_FILE_WEBHOOK_URL, {
+                method: 'PUT',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify(payload)
+            });
+
+            const data = await response.json();
+            console.log('n8n webhook response:', data);
+
+            if (data.code === 202) {
+                return { success: true, message: data.message };
+            } else {
+                return { success: false, message: data.message || 'Error processing file' };
+            }
+        } catch (error) {
+            console.error('Error calling n8n file webhook:', error);
+            return { success: false, message: 'Connection error' };
+        }
+    }
+
     // ========================================
     // UTILITY FUNCTIONS
     // ========================================
@@ -197,18 +248,22 @@
     // STATISTICS
     // ========================================
     function updateStats() {
-        const projects = window.mockProjects;
+        // Use ProjectsService cache if available, otherwise fallback to mockProjects
+        const projects = projectsService 
+            ? projectsService.getCachedProjects() 
+            : (window.mockProjects || []);
+            
         const total = projects.length;
         const completed = projects.filter(p => p.status === 'COMPLETED').length;
         const processing = projects.filter(p => p.status === 'PROCESSING').length;
         const pending = projects.filter(p => p.status === 'PENDING_REVIEW').length;
         const failed = projects.filter(p => p.status === 'FAILED').length;
 
-        statTotal.textContent = total;
-        statCompleted.textContent = completed;
-        statProcessing.textContent = processing;
-        statPending.textContent = pending;
-        statFailed.textContent = failed;
+        if (statTotal) statTotal.textContent = total;
+        if (statCompleted) statCompleted.textContent = completed;
+        if (statProcessing) statProcessing.textContent = processing;
+        if (statPending) statPending.textContent = pending;
+        if (statFailed) statFailed.textContent = failed;
     }
 
     // ========================================
@@ -223,7 +278,13 @@
         
         const statusClass = getStatusClass(project.status);
         const statusLabel = getStatusLabel(project.status);
-        const tagDisplayNames = (project.tags || []).map(tag => tagToDisplayName(tag));
+        
+        // Ensure tags is always an array (Firebase may return object or string)
+        let tags = project.tags || [];
+        if (!Array.isArray(tags)) {
+            tags = typeof tags === 'string' ? tags.split(',').map(t => t.trim()) : [];
+        }
+        const tagDisplayNames = tags.map(tag => tagToDisplayName(tag));
         const isFav = isFavorite(project.id);
         
         const tagsHtml = tagDisplayNames.length > 0 
@@ -293,40 +354,28 @@
     // FILTERING & SORTING
     // ========================================
     function getFilteredAndSortedProjects() {
-        let projects = [...window.mockProjects];
-        
-        // Search filter
-        if (searchQuery) {
-            const query = searchQuery.toLowerCase();
-            projects = projects.filter(p => 
-                p.name.toLowerCase().includes(query) ||
-                (p.serialNumber && p.serialNumber.includes(query))
-            );
-        }
-
-        // Favorites filter
-        if (showOnlyFavorites) {
-            projects = projects.filter(p => isFavorite(p.id));
-        }
-
-        // Tag filter
-        const selectedTag = filterTag.value;
-        if (selectedTag) {
-            projects = projects.filter(p => p.tags && p.tags.includes(selectedTag));
-        }
-        
-        // Sort
-        const sortValue = sortOrder.value;
-        projects.sort((a, b) => {
-            const dateA = a.createdAt ? new Date(a.createdAt) : new Date(0);
-            const dateB = b.createdAt ? new Date(b.createdAt) : new Date(0);
-            return sortValue === 'newest' ? dateB - dateA : dateA - dateB;
-        });
+        // Use ProjectsService for filtering if available, otherwise fallback to mockProjects
+        const projects = projectsService 
+            ? projectsService.filterProjects({
+                search: searchQuery,
+                tag: filterTag.value,
+                favorites: showOnlyFavorites,
+                favoriteIds: favorites,
+                sort: sortOrder.value
+            })
+            : [...(window.mockProjects || [])];
         
         return projects;
     }
 
-    function loadProjects() {
+    async function loadProjects() {
+        projectsGrid.innerHTML = '<p class="loading-projects">Loading projects...</p>';
+        
+        // Load from Firebase if service is available
+        if (projectsService) {
+            await projectsService.loadProjects();
+        }
+        
         projectsGrid.innerHTML = '';
         const filteredProjects = getFilteredAndSortedProjects();
         
@@ -627,7 +676,7 @@
         submitProjectBtn.disabled = !(type && hasSerialNumber && uploadedFile && isUploadComplete && !isUploading);
     }
 
-    function handleFormSubmit(e) {
+    async function handleFormSubmit(e) {
         e.preventDefault();
         
         const type = projectTypeSelect.value;
@@ -646,22 +695,52 @@
         
         const tagValues = selectedTags.map(tag => displayNameToTag(tag));
         
-        const newProject = {
-            id: `proj-${Date.now()}`,
-            name: projectName,
-            type: type,
-            serialNumber: serialNumber,
-            tags: tagValues,
-            status: 'PROCESSING',
-            lastUpdated: 'Just now',
-            createdAt: new Date()
-        };
+        // Show processing state
+        projectForm.style.display = 'none';
+        processingLoader.style.display = 'flex';
+        submitProjectBtn.disabled = true;
         
-        window.mockProjects.unshift(newProject);
-        addNotification(`New project "${projectName}" created`, newProject.id);
-        toggleModal(false);
-        loadProjects();
-        window.showToast('Project created successfully!', 'success');
+        // Generate object_name with timestamp (like the example: 1769279686358-prueba_real_files.zip)
+        const timestamp = Date.now();
+        const objectName = `${timestamp}-${uploadedFile.name}`;
+        
+        // Prepare tags as comma-separated string
+        const tagsString = selectedTags.join(', ');
+        
+        // Call n8n webhook to process the file
+        const webhookResult = await callN8nFileWebhook(
+            objectName,
+            projectName,
+            type,
+            serialNumber,
+            tagsString
+        );
+        
+        if (webhookResult.success) {
+            const newProject = {
+                id: `proj-${timestamp}`,
+                name: projectName,
+                type: type,
+                serialNumber: serialNumber,
+                tags: tagValues,
+                status: 'PROCESSING',
+                lastUpdated: 'Just now',
+                createdAt: new Date(),
+                objectName: objectName // Store the object name for reference
+            };
+            
+            window.mockProjects.unshift(newProject);
+            addNotification(`New project "${projectName}" created and processing started`, newProject.id);
+            toggleModal(false);
+            loadProjects();
+            window.showToast('Project created successfully! Processing started.', 'success');
+        } else {
+            // Reset form to allow retry
+            projectForm.style.display = 'block';
+            processingLoader.style.display = 'none';
+            submitProjectBtn.disabled = false;
+            window.showToast(`Error: ${webhookResult.message}`, 'error');
+        }
     }
 
     // ========================================
@@ -771,8 +850,17 @@
     // ========================================
     // INITIAL LOAD
     // ========================================
-    document.addEventListener('DOMContentLoaded', () => {
-        loadProjects();
+    document.addEventListener('DOMContentLoaded', async () => {
+        // Initialize Firebase
+        if (window.firebaseService) {
+            window.firebaseService.initialize();
+            projectsService = new ProjectsService(window.firebaseService);
+            console.log('Firebase and ProjectsService initialized');
+        } else {
+            console.warn('Firebase service not available, using mock data');
+        }
+        
+        await loadProjects();
         updateStats();
         updateNotificationUI();
     });

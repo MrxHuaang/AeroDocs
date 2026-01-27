@@ -304,7 +304,6 @@
     line-height: 1.5;
     word-wrap: break-word;
     font-size: 0.875rem;
-    white-space: pre-wrap;
 }
 
 .user-message {
@@ -312,6 +311,7 @@
     background: linear-gradient(135deg, var(--primary-color) 0%, #8B5CF6 100%);
     color: white;
     border-bottom-right-radius: var(--border-radius-sm);
+    white-space: pre-wrap;
 }
 
 .ai-message {
@@ -320,6 +320,111 @@
     color: var(--text-primary);
     border: 1px solid var(--border-color);
     border-bottom-left-radius: var(--border-radius-sm);
+}
+
+/* Markdown styling for AI messages */
+.ai-message p {
+    margin: 0 0 0.75em 0;
+}
+
+.ai-message p:last-child {
+    margin-bottom: 0;
+}
+
+.ai-message ul,
+.ai-message ol {
+    margin: 0.5em 0;
+    padding-left: 1.5em;
+}
+
+.ai-message li {
+    margin: 0.25em 0;
+}
+
+.ai-message strong {
+    font-weight: 600;
+    color: var(--text-primary);
+}
+
+.ai-message em {
+    font-style: italic;
+}
+
+.ai-message code {
+    background-color: var(--surface-color);
+    padding: 0.2em 0.4em;
+    border-radius: var(--border-radius-sm);
+    font-family: 'Consolas', 'Monaco', monospace;
+    font-size: 0.85em;
+    border: 1px solid var(--border-color);
+}
+
+.ai-message pre {
+    background-color: var(--surface-color);
+    padding: var(--spacing-md);
+    border-radius: var(--border-radius-md);
+    overflow-x: auto;
+    margin: 0.75em 0;
+    border: 1px solid var(--border-color);
+}
+
+.ai-message pre code {
+    background: none;
+    padding: 0;
+    border: none;
+}
+
+.ai-message table {
+    width: 100%;
+    border-collapse: collapse;
+    margin: 0.75em 0;
+    font-size: 0.85em;
+}
+
+.ai-message th,
+.ai-message td {
+    border: 1px solid var(--border-color);
+    padding: 0.5em 0.75em;
+    text-align: left;
+}
+
+.ai-message th {
+    background-color: var(--surface-color);
+    font-weight: 600;
+}
+
+.ai-message blockquote {
+    border-left: 3px solid var(--primary-color);
+    margin: 0.75em 0;
+    padding-left: 1em;
+    color: var(--text-secondary);
+}
+
+.ai-message h1,
+.ai-message h2,
+.ai-message h3,
+.ai-message h4 {
+    margin: 1em 0 0.5em 0;
+    font-weight: 600;
+    color: var(--text-primary);
+}
+
+.ai-message h1:first-child,
+.ai-message h2:first-child,
+.ai-message h3:first-child,
+.ai-message h4:first-child {
+    margin-top: 0;
+}
+
+.ai-message hr {
+    border: none;
+    border-top: 1px solid var(--border-color);
+    margin: 1em 0;
+}
+
+.ai-message a {
+    color: var(--primary-color);
+    text-decoration: underline;
 }
 
 .typing-indicator span {
