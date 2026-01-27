@@ -7,7 +7,7 @@
 class ProjectsService {
     constructor(firebaseService) {
         this.firebaseService = firebaseService;
-        this.collectionName = 'proyectos';
+        this.collectionName = 'proyectos_lista';
         this.projects = [];
         this.loading = false;
         
@@ -31,22 +31,40 @@ class ProjectsService {
      * Parse Firestore document to project object
      */
     parseProject(doc) {
-        const data = doc.data ? doc.data() : doc;
+        //console.log('serie', doc.data().serie);
+        //console.log('type', doc.data().type);
+        const data = doc.data();
         const docId = doc.id || '';
         
-        // Extract type and serial from document ID (e.g., "577178_aircraft")
-        let type = 'aircraft';
-        let serialNumber = docId;
+        // Use type and serie directly from Firestore (schema: type, serie)
+        // Fallback to extracting from document ID if not present
+        let type = data.type;
+        // Firestore uses 'serie' field, not 'serialNumber'
+        // Convert to string and handle null/undefined
+        let serialNumber = data.serie || '';
         
-        if (docId.includes('_')) {
-            const parts = docId.split('_');
-            serialNumber = parts[0];
-            type = parts[1]?.toLowerCase() || 'aircraft';
+        // If not in Firestore or empty, try to extract from document ID (e.g., "577178_aircraft")
+        if (!serialNumber) {
+            console.log('no serial number');
+            if (docId.includes('_')) {
+                const parts = docId.split('_');
+                serialNumber = parts[0] || docId;
+                if (!type || (typeof type === 'string')) {
+                    type = parts[1] || '';
+                }
+            } else {
+                // Last resort: use docId as serialNumber
+                serialNumber = docId;
+            }
         }
         
-        // Generate a readable name
-        const typeLabel = type === 'aircraft' ? 'Aircraft MSN' : 'Engine ESN';
-        const name = data.name || `${typeLabel} ${serialNumber}`;
+        const name = data.name;
+        
+        // Handle tags: Firestore stores as string "tag1, tag2, tag3" or array
+        let tags = data.tags || [];
+        if (typeof tags === 'string') {
+            tags = tags.split(',').map(t => t.trim()).filter(t => t.length > 0);
+        }
         
         return {
             id: docId,
@@ -54,7 +72,8 @@ class ProjectsService {
             type: type,
             serialNumber: serialNumber,
             status: data.status || 'PROCESSING',
-            tags: data.tags || [],
+            estado: data.estado || null,
+            tags: tags,
             createdAt: data.createdAt?.toDate ? data.createdAt.toDate() : new Date(),
             lastUpdated: data.lastUpdated || 'Unknown',
             objectName: data.objectName || null,
@@ -155,7 +174,13 @@ class ProjectsService {
             
             if (doc.exists) {
                 console.log('[Projects] Found project in Firebase');
-                return this.parseProject(doc);
+                const parsedProject = this.parseProject(doc);
+                console.log('[Projects] Parsed project data:', { 
+                    id: parsedProject.id, 
+                    type: parsedProject.type, 
+                    serialNumber: parsedProject.serialNumber 
+                });
+                return parsedProject;
             }
             
             console.log('[Projects] Project not found in Firebase:', projectId);
@@ -203,12 +228,26 @@ class ProjectsService {
             // Generate document ID from type and serial
             const docId = `${projectData.serialNumber}_${projectData.type}`;
             
+            // Convert tags array to string format for Firestore (schema: "tag1, tag2, tag3")
+            let tagsValue = projectData.tags || [];
+            if (Array.isArray(tagsValue)) {
+                tagsValue = tagsValue.join(', ');
+            }
+            
+            // Convert serialNumber to number if it's a valid number string
+            // Firestore stores serie as number
+            let serieValue = projectData.serialNumber;
+            if (typeof serieValue === 'string') {
+                const parsed = parseInt(serieValue, 10);
+                serieValue = isNaN(parsed) ? serieValue : parsed;
+            }
+            
             const projectDoc = {
                 name: projectData.name,
                 type: projectData.type,
-                serialNumber: projectData.serialNumber,
+                serie: serieValue, // Firestore uses 'serie' field (as number)
                 status: 'PROCESSING',
-                tags: projectData.tags || [],
+                tags: tagsValue, // Firestore stores tags as string
                 createdAt: firebase.firestore.FieldValue.serverTimestamp(),
                 lastUpdated: 'Just now',
                 objectName: projectData.objectName || null
@@ -279,7 +318,7 @@ class ProjectsService {
             const query = options.search.toLowerCase();
             filtered = filtered.filter(p => 
                 p.name.toLowerCase().includes(query) ||
-                p.serialNumber.includes(query)
+                String(p.serialNumber || '').includes(query)
             );
         }
         

@@ -148,24 +148,23 @@
     // ========================================
     // UTILITY FUNCTIONS
     // ========================================
-    function getStatusClass(status) {
-        const statusMap = {
-            'COMPLETED': 'status-completed',
-            'PROCESSING': 'status-processing',
-            'PENDING_REVIEW': 'status-pending',
-            'FAILED': 'status-failed'
-        };
-        return statusMap[status] || 'status-processing';
+    function getStatusClass(estado) {
+        if (!estado) return 'status-processing';
+        const estadoLower = estado.toLowerCase();
+        if (estadoLower === 'completado') {
+            return 'status-completed';
+        }
+        return 'status-processing';
     }
 
-    function getStatusLabel(status) {
-        const labelMap = {
-            'COMPLETED': 'Completed',
-            'PROCESSING': 'Processing',
-            'PENDING_REVIEW': 'Pending Review',
-            'FAILED': 'Failed'
-        };
-        return labelMap[status] || status;
+    function getStatusLabel(estado) {
+        if (!estado) return 'Processing';
+        const estadoLower = estado.toLowerCase();
+        if (estadoLower === 'completado') {
+            return 'Completed';
+        }
+        // Capitalize first letter and keep rest
+        return estado.charAt(0).toUpperCase() + estado.slice(1).toLowerCase();
     }
 
     function tagToDisplayName(tag) {
@@ -276,8 +275,10 @@
         card.className = 'project-card';
         card.dataset.projectId = project.id;
         
-        const statusClass = getStatusClass(project.status);
-        const statusLabel = getStatusLabel(project.status);
+        // Use estado field instead of status
+        const estado = project.estado || null;
+        const statusClass = getStatusClass(estado);
+        const statusLabel = getStatusLabel(estado);
         
         // Ensure tags is always an array (Firebase may return object or string)
         let tags = project.tags || [];

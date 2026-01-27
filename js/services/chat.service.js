@@ -10,11 +10,13 @@ class ChatService {
         this.projectId = projectId;
         this.conversation = [];
         this.webhookUrl = 'https://n8n.srv1026018.hstgr.cloud/webhook/2c2356a8-a5aa-4327-b8c7-7e9e51a8f5b1';
+        this.isFirstMessage = true;
         
         // Callbacks for UI updates
         this.onMessageReceived = null;
         this.onError = null;
         this.onLoadingChange = null;
+        this.onLoadingTextChange = null;
     }
 
     /**
@@ -30,6 +32,10 @@ class ChatService {
     loadHistory() {
         const saved = this.storageService.get(this.getChatStorageKey(), []);
         this.conversation = saved;
+        // If there's history, it's not the first message
+        // Count only user messages (not the initial greeting)
+        const userMessages = saved.filter(msg => msg.sender === 'user');
+        this.isFirstMessage = userMessages.length === 0;
         return this.conversation;
     }
 
@@ -46,6 +52,7 @@ class ChatService {
     clearHistory() {
         this.conversation = [];
         this.storageService.remove(this.getChatStorageKey());
+        this.isFirstMessage = true; // Reset first message flag
         
         // Add initial greeting
         const initialMessage = this.createInitialGreeting();
@@ -102,11 +109,17 @@ class ChatService {
         if (this.onLoadingChange) {
             this.onLoadingChange(true);
         }
+        
+        // Set loading text based on whether it's the first message
+        if (this.onLoadingTextChange) {
+            const loadingText = this.isFirstMessage ? 'Cargando información' : 'Pensando';
+            this.onLoadingTextChange(loadingText);
+        }
 
         const payload = {
             message: userInput,
             historial: this.convertHistorialForWebhook(),
-            type: projectType === 'aircraft' ? 'Aircraft' : 'engine',
+            type: projectType || '', // Use type directly from Firestore
             serie: serialNumber || ''
         };
 
@@ -131,6 +144,11 @@ class ChatService {
             
             this.conversation.push(aiMessage);
             this.saveHistory();
+            
+            // After first message, set flag to false
+            if (this.isFirstMessage) {
+                this.isFirstMessage = false;
+            }
 
             if (this.onLoadingChange) {
                 this.onLoadingChange(false);
@@ -147,6 +165,11 @@ class ChatService {
             
             if (this.onLoadingChange) {
                 this.onLoadingChange(false);
+            }
+            
+            // After first message, set flag to false even on error
+            if (this.isFirstMessage) {
+                this.isFirstMessage = false;
             }
 
             const errorMessage = {

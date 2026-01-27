@@ -25,6 +25,7 @@
         chatForm: document.getElementById('chat-form'),
         chatInput: document.getElementById('chat-input'),
         aiThinkingIndicator: document.getElementById('ai-thinking-indicator'),
+        aiThinkingText: document.getElementById('ai-thinking-text'),
         
         // Buttons
         exportReportBtn: document.getElementById('export-report-btn'),
@@ -342,10 +343,21 @@
         
         if (userInput) {
             DOM.chatInput.value = '';
+            
+            // Ensure we have valid type and serialNumber from Firestore
+            // type is always a string, serialNumber is always a number
+            const projectType = projectInfo?.type || 'aircraft';
+            const projectSerial = projectInfo?.serialNumber || '';
+            
+            // Convert serialNumber to string for the webhook (it's a number in Firestore)
+            const projectSerialString = String(projectSerial);
+            
+            console.log('[Project] Sending chat message with:', { type: projectType, serie: projectSerialString });
+            
             await chatService.sendMessage(
                 userInput, 
-                projectInfo?.type || 'aircraft',
-                projectInfo?.serialNumber || ''
+                projectType,
+                projectSerialString
             );
         }
     }
@@ -385,6 +397,11 @@
             DOM.aiThinkingIndicator.style.display = loading ? 'flex' : 'none';
             if (loading) scrollChatToBottom();
         };
+        chatService.onLoadingTextChange = (text) => {
+            if (DOM.aiThinkingText) {
+                DOM.aiThinkingText.textContent = text;
+            }
+        };
         chatService.onError = (msg) => window.showToast(msg, 'error');
     }
 
@@ -410,15 +427,24 @@
         // Load project info from Firebase
         projectInfo = await getProjectInfoFromFirebase(projectId);
         
+        console.log('[Project] Loaded projectInfo from Firestore:', {
+            id: projectInfo?.id,
+            name: projectInfo?.name,
+            type: projectInfo?.type,
+            serialNumber: projectInfo?.serialNumber
+        });
+        
         if (!projectInfo) {
             // Project not found, create basic info from ID
             const parts = projectId.split('_');
+            const serialNumberFromId = parts[0] ? parseInt(parts[0], 10) || parts[0] : projectId;
             projectInfo = {
                 id: projectId,
                 name: `Project ${parts[0] || projectId}`,
                 type: parts[1] || 'aircraft',
-                serialNumber: parts[0] || projectId
+                serialNumber: serialNumberFromId // Keep as number if possible
             };
+            console.warn('[Project] Project not found in Firestore, using fallback data:', projectInfo);
         }
         
         // Update page title

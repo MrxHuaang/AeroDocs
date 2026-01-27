@@ -438,6 +438,24 @@
     text-decoration: underline;
 }
 
+.ai-message .message-content {
+    display: flex;
+    align-items: center;
+    gap: var(--spacing-sm);
+}
+
+.thinking-text {
+    color: var(--text-secondary);
+    font-size: 0.875rem;
+    font-style: italic;
+}
+
+.typing-indicator {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+}
+
 .typing-indicator span {
     height: 8px;
     width: 8px;
@@ -445,7 +463,6 @@
     border-radius: 50%;
     display: inline-block;
     animation: bounce 1.4s infinite ease-in-out both;
-    margin-right: 4px;
 }
 
 .typing-indicator span:nth-child(1) { animation-delay: -0.32s; }
