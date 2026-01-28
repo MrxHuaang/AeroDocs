@@ -1,0 +1,164 @@
+import  {  Injectable  }  from  '@angular/core';
+import  {  HttpClient  }  from  '@angular/common/http';
+import  {  Observable,  Subject  }  from  'rxjs';
+import  {  map  }  from  'rxjs/operators';
+
+	export  interface UploadProgress {
+		fileName:  string;
+		progress:  number;
+		status:  'pending'  |  'uploading'  |  'completed'  |  'error';
+		error?:  string;
+		uploadedBytes?:  number;
+		totalBytes?:  number;
+	}
+
+	export  interface SignedUrlResponse {
+		signedUrl:  string;
+		fileName:  string;
+		bucket:  string;
+	}
+
+	@Injectable({
+		providedIn:  'root'
+	})
+	export  class  UploadService  {
+		// URL del webhook de n8n
+		private apiUrl =  'http://localhost:5678/webhook';
+
+		constructor(private  http: HttpClient)  {}
+
+		/**
+		* Obtiene una Signed URL del backend n8n para subir el archivo
+		*/
+		getSignedUrl(fileName:  string,  contentType:  string): Observable<SignedUrlResponse>  {
+			return  this.http.post<SignedUrlResponse | SignedUrlResponse[]>(
+				`${this.apiUrl}/generate-upload-url`,
+				{  fileName,  contentType  }
+			).pipe(
+				map(response  =>  {
+					// n8n devuelve array, extraer primer elemento
+					if (Array.isArray(response)) {
+						return  response[0];
+					}
+					return  response;
+				})
+			);
+		}
+
+		/**
+		* Inicia una sesion de upload resumable y sube el archivo
+		* Retorna un Subject para reportar el progreso
+		*/
+		uploadFileResumable(file: File,  signedUrl:  string): Subject<UploadProgress>  {
+			const  progressSubject  =  new  Subject<UploadProgress>();
+			this.initiateResumableUpload(file,  signedUrl,  progressSubject);
+			return  progressSubject;
+		}
+
+		/**
+		* Iniciar la sesion resumable y subir el archivo
+		*/
+		private  async  initiateResumableUpload(
+			file: File,
+			signedUrl:  string,
+			progressSubject: Subject<UploadProgress>
+		): Promise<void>  {
+			try  {
+				// Emitir estado inicial
+				progressSubject.next({
+					fileName:  file.name,
+					progress:  0,
+					status:  'uploading',
+					uploadedBytes:  0,
+					totalBytes:  file.size
+				});
+
+				// Paso 1: Iniciar sesion resumable con GCS
+				const  initResponse  =  await  fetch(signedUrl,  {
+					method:  'POST',
+					headers:  {
+						'Content-Type':  file.type,
+						'x-goog-resumable':  'start'
+					}
+				});
+
+				if (!initResponse.ok) {
+					throw  new  Error(`Error iniciando upload: ${initResponse.status} 			${initResponse.statusText}`);
+				}
+
+				// Obtener la URI de upload del header Location
+				const  uploadUri  =  initResponse.headers.get('Location');
+
+				if (!uploadUri) {
+					throw  new  Error('No se recibio URI de upload en la respuesta');
+				}
+
+				// Paso 2: Subir el archivo con tracking de progreso
+				await  this.uploadWithProgress(file,  uploadUri,  progressSubject);
+
+			}  catch (error) {
+				console.error('Error en upload:',  error);
+				progressSubject.next({
+					fileName:  file.name,
+					progress:  0,
+					status:  'error',
+					error:  error  instanceof Error ?  error.message  :  'Error desconocido'
+				});
+				progressSubject.complete();
+			}
+		}
+
+		/**
+		* Sube el archivo usando XMLHttpRequest para trackear el progreso
+		*/
+		private  uploadWithProgress(
+			file: File,
+			uploadUri:  string,
+			progressSubject: Subject<UploadProgress>
+		): Promise<void>  {
+			return  new  Promise((resolve,  reject)  =>  {
+				const  xhr  =  new  XMLHttpRequest();
+
+				// Tracking de progreso
+				xhr.upload.addEventListener('progress',  (event)  =>  {
+					if (event.lengthComputable) {
+						const  progress  =  Math.round((event.loaded  /  event.total) *  100);
+						progressSubject.next({
+							fileName:  file.name,
+							progress,
+							status:  'uploading',
+							uploadedBytes:  event.loaded,
+							totalBytes:  event.total
+						});
+					}
+				});
+
+				// Completado
+				xhr.addEventListener('load',  ()  =>  {
+					if (xhr.status  >=  200  &&  xhr.status  <  300) {
+					progressSubject.next({
+						fileName:  file.name,
+						progress:  100,
+						status:  'completed',
+						uploadedBytes:  file.size,
+						totalBytes:  file.size
+					});
+					progressSubject.complete();
+					resolve();
+				}  else  {
+					reject(new  Error(`Upload fallo con status: ${xhr.status}`));
+				}
+			});
+
+			// Error
+			xhr.addEventListener('error',  ()  =>  {
+				reject(new  Error('Error de red durante el upload'));
+			}); 
+
+			// Enviar
+			xhr.open('PUT',  uploadUri);
+			xhr.setRequestHeader('Content-Type',  file.type);
+			xhr.send(file);
+		});
+	}
+}

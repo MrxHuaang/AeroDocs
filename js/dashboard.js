@@ -76,6 +76,8 @@
     let uploadedFile = null;
     let isUploading = false;
     let isUploadComplete = false;
+    let uploadedFileName = null; // fileName from generate-upload-url response
+    let uploadedSignedUrl = null; // signedUrl from generate-upload-url response
     let selectedTags = [];
     let editSelectedTags = [];
     let projectToDelete = null;
@@ -101,6 +103,45 @@
     // N8N WEBHOOK CONFIGURATION
     // ========================================
     const N8N_FILE_WEBHOOK_URL = 'https://n8n.srv1026018.hstgr.cloud/webhook/849ca1f9-a9b5-4630-b533-42b770a8e9b0';
+    const N8N_UPLOAD_URL_WEBHOOK = 'https://n8n.srv1026018.hstgr.cloud/webhook/generate-upload-url';
+
+    /**
+     * Calls the n8n webhook to generate an upload URL for the file
+     * @param {string} fileName - The file name (e.g., "project-files.zip")
+     * @param {string} contentType - The content type (e.g., "application/zip" or "application/vnd.rar")
+     * @returns {Promise} - Resolves with webhook response containing signedUrl
+     */
+    async function generateUploadUrl(fileName, contentType) {
+        const payload = {
+            fileName: fileName,
+            contentType: contentType
+        };
+
+        console.log('Generating upload URL for:', payload);
+
+        try {
+            const response = await fetch(N8N_UPLOAD_URL_WEBHOOK, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify(payload)
+            });
+
+            const data = await response.json();
+            console.log('Upload URL response:', data);
+
+            if (Array.isArray(data) && data.length > 0 && data[0].signedUrl) {
+                console.log('Signed URL:', data[0].signedUrl);
+                return { success: true, signedUrl: data[0].signedUrl, fileName: data[0].fileName, bucket: data[0].bucket };
+            } else {
+                return { success: false, message: 'Invalid response format' };
+            }
+        } catch (error) {
+            console.error('Error generating upload URL:', error);
+            return { success: false, message: 'Connection error' };
+        }
+    }
 
     /**
      * Calls the n8n webhook to process the uploaded file
@@ -143,6 +184,71 @@
             console.error('Error calling n8n file webhook:', error);
             return { success: false, message: 'Connection error' };
         }
+    }
+
+    /**
+     * Uploads file to Google Cloud Storage using signed URL (resumable upload).
+     * Uses GCS resumable upload: POST to start session, then PUT file to Location URI.
+     * @param {File} file - The file to upload
+     * @param {string} signedUrl - Signed URL from generate-upload-url
+     * @param {function} onProgress - Optional callback(percent, loaded, total)
+     * @returns {Promise<void>}
+     */
+    function uploadFileToGCS(file, signedUrl, onProgress) {
+        return new Promise((resolve, reject) => {
+            (async () => {
+                try {
+                    if (onProgress) onProgress(0, 0, file.size);
+
+                    // Step 1: Start resumable session with GCS
+                    const initResponse = await fetch(signedUrl, {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': file.type || 'application/octet-stream',
+                            'x-goog-resumable': 'start'
+                        }
+                    });
+
+                    if (!initResponse.ok) {
+                        throw new Error(`Error iniciando upload: ${initResponse.status} ${initResponse.statusText}`);
+                    }
+
+                    const uploadUri = initResponse.headers.get('Location');
+                    if (!uploadUri) {
+                        throw new Error('No se recibió URI de upload en la respuesta');
+                    }
+
+                    // Step 2: Upload file with progress
+                    const xhr = new XMLHttpRequest();
+
+                    xhr.upload.addEventListener('progress', (event) => {
+                        if (event.lengthComputable && onProgress) {
+                            const percent = Math.round((event.loaded / event.total) * 100);
+                            onProgress(percent, event.loaded, event.total);
+                        }
+                    });
+
+                    xhr.addEventListener('load', () => {
+                        if (xhr.status >= 200 && xhr.status < 300) {
+                            if (onProgress) onProgress(100, file.size, file.size);
+                            resolve();
+                        } else {
+                            reject(new Error(`Upload falló con status: ${xhr.status}`));
+                        }
+                    });
+
+                    xhr.addEventListener('error', () => {
+                        reject(new Error('Error de red durante el upload'));
+                    });
+
+                    xhr.open('PUT', uploadUri);
+                    xhr.setRequestHeader('Content-Type', file.type || 'application/octet-stream');
+                    xhr.send(file);
+                } catch (err) {
+                    reject(err);
+                }
+            })();
+        });
     }
 
     // ========================================
@@ -504,6 +610,8 @@
         processingLoader.style.display = 'none';
         projectForm.reset();
         uploadedFile = null;
+        uploadedFileName = null;
+        uploadedSignedUrl = null;
         selectedTags = [];
         esnGroup.style.display = 'none';
         msnGroup.style.display = 'none';
@@ -650,22 +758,44 @@
         uploadedFile = file;
         dropZone.querySelector('p').textContent = `File selected: ${file.name}`;
         isUploadComplete = false;
-        simulateUpload(file.name);
+        simulateUpload(file);
     }
     
-    function simulateUpload(fileName) {
+    async function simulateUpload(file) {
         isUploading = true;
         submitProjectBtn.disabled = true;
         uploadProgressContainer.style.display = 'block';
-        fileNameDisplay.textContent = `Uploading ${fileName}...`;
+        fileNameDisplay.textContent = `Uploading ${file.name}...`;
         
+        // Determine content type based on file extension
+        const fileExtension = file.name.substring(file.name.lastIndexOf('.')).toLowerCase();
+        const contentType = fileExtension === '.zip' 
+            ? 'application/zip' 
+            : fileExtension === '.rar' 
+            ? 'application/vnd.rar' 
+            : 'application/octet-stream';
+        
+        // Generate upload URL while uploading
+        const uploadUrlResult = await generateUploadUrl(file.name, contentType);
+        
+        if (uploadUrlResult.success) {
+            console.log('Signed URL:', uploadUrlResult.signedUrl);
+            uploadedFileName = uploadUrlResult.fileName;
+            uploadedSignedUrl = uploadUrlResult.signedUrl;
+        } else {
+            console.warn('Failed to generate upload URL:', uploadUrlResult.message);
+            uploadedFileName = null;
+            uploadedSignedUrl = null;
+        }
+        
+        // Simulate upload progress
         let progress = 0;
         const interval = setInterval(() => {
             progress += 10;
             progressBarFill.style.width = `${progress}%`;
             if (progress >= 100) {
                 clearInterval(interval);
-                fileNameDisplay.textContent = `Upload complete: ${fileName}`;
+                fileNameDisplay.textContent = `Upload complete: ${file.name}`;
                 isUploading = false;
                 isUploadComplete = true;
                 updateSubmitButtonState();
@@ -706,46 +836,66 @@
         processingLoader.style.display = 'flex';
         submitProjectBtn.disabled = true;
         
-        // Generate object_name with timestamp (like the example: 1769279686358-prueba_real_files.zip)
-        const timestamp = Date.now();
-        const objectName = `${timestamp}-${uploadedFile.name}`;
-        
-        // Prepare tags as comma-separated string
-        const tagsString = selectedTags.join(', ');
-        
-        // Call n8n webhook to process the file
-        const webhookResult = await callN8nFileWebhook(
-            objectName,
-            projectName,
-            type,
-            serialNumber,
-            tagsString
-        );
-        
-        if (webhookResult.success) {
-            const newProject = {
-                id: `proj-${timestamp}`,
-                name: projectName,
-                type: type,
-                serialNumber: serialNumber,
-                tags: tagValues,
-                status: 'PROCESSING',
-                lastUpdated: 'Just now',
-                createdAt: new Date(),
-                objectName: objectName // Store the object name for reference
-            };
-            
-            window.mockProjects.unshift(newProject);
-            addNotification(`New project "${projectName}" created and processing started`, newProject.id);
-            toggleModal(false);
-            loadProjects();
-            window.showToast('Project created successfully! Processing started.', 'success');
-        } else {
-            // Reset form to allow retry
+        if (!uploadedFileName || !uploadedSignedUrl) {
+            window.showToast('Error: Upload URL was not generated. Please try uploading the file again.', 'error');
             projectForm.style.display = 'block';
             processingLoader.style.display = 'none';
             submitProjectBtn.disabled = false;
-            window.showToast(`Error: ${webhookResult.message}`, 'error');
+            return;
+        }
+
+        const objectName = uploadedFileName;
+        const tagsString = selectedTags.join(', ');
+        const timestamp = Date.now();
+
+        try {
+            // 1. Upload file to Google Cloud Storage using signed URL
+            await uploadFileToGCS(uploadedFile, uploadedSignedUrl, (percent, loaded, total) => {
+                if (fileNameDisplay && uploadProgressContainer) {
+                    uploadProgressContainer.style.display = 'block';
+                    fileNameDisplay.textContent = `Uploading to cloud... ${percent}%`;
+                    progressBarFill.style.width = `${percent}%`;
+                }
+            });
+
+            // 2. After upload is confirmed, call processing webhook
+            const webhookResult = await callN8nFileWebhook(
+                objectName,
+                projectName,
+                type,
+                serialNumber,
+                tagsString
+            );
+        
+            if (webhookResult.success) {
+                const newProject = {
+                    id: `proj-${timestamp}`,
+                    name: projectName,
+                    type: type,
+                    serialNumber: serialNumber,
+                    tags: tagValues,
+                    status: 'PROCESSING',
+                    lastUpdated: 'Just now',
+                    createdAt: new Date(),
+                    objectName: objectName
+                };
+                window.mockProjects.unshift(newProject);
+                addNotification(`New project "${projectName}" created and processing started`, newProject.id);
+                toggleModal(false);
+                loadProjects();
+                window.showToast('Project created successfully! Processing started.', 'success');
+            } else {
+                projectForm.style.display = 'block';
+                processingLoader.style.display = 'none';
+                submitProjectBtn.disabled = false;
+                window.showToast(`Error: ${webhookResult.message}`, 'error');
+            }
+        } catch (uploadError) {
+            console.error('Upload or processing error:', uploadError);
+            projectForm.style.display = 'block';
+            processingLoader.style.display = 'none';
+            submitProjectBtn.disabled = false;
+            window.showToast(uploadError instanceof Error ? uploadError.message : 'Upload failed', 'error');
         }
     }
 
