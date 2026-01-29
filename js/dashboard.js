@@ -21,6 +21,10 @@
     const progressBarFill = document.getElementById('progress-bar-fill');
     const submitProjectBtn = document.getElementById('submit-project-btn');
     const processingLoader = document.getElementById('processing-loader');
+    const processingLoaderText = document.getElementById('processing-loader-text');
+    const processingLoaderProgressWrap = document.getElementById('processing-loader-progress-wrap');
+    const processingLoaderProgressFill = document.getElementById('processing-loader-progress-fill');
+    const modalFooter = document.querySelector('#create-project-modal .modal-footer');
 
     // Form elements
     const projectTypeSelect = document.getElementById('project-type');
@@ -69,6 +73,11 @@
     const closeEditModalBtn = document.getElementById('close-edit-modal-btn');
     const cancelEditBtn = document.getElementById('cancel-edit-btn');
     const saveEditBtn = document.getElementById('save-edit-btn');
+
+    // Processing blocked alert
+    const processingBlockedModal = document.getElementById('processing-blocked-modal');
+    const processingBlockedBackdrop = document.getElementById('processing-blocked-backdrop');
+    const processingBlockedOkBtn = document.getElementById('processing-blocked-ok-btn');
 
     // ========================================
     // STATE
@@ -254,23 +263,28 @@
     // ========================================
     // UTILITY FUNCTIONS
     // ========================================
+    /**
+     * Returns CSS class for status badge from proyectos_lista.estado
+     * "completed" / "completado" -> green; "processing" -> purple
+     */
     function getStatusClass(estado) {
         if (!estado) return 'status-processing';
-        const estadoLower = estado.toLowerCase();
-        if (estadoLower === 'completado') {
+        const estadoLower = String(estado).toLowerCase().trim();
+        if (estadoLower === 'completed' || estadoLower === 'completado') {
             return 'status-completed';
+        }
+        if (estadoLower === 'processing') {
+            return 'status-processing';
         }
         return 'status-processing';
     }
 
+    /**
+     * Returns label for status badge: value of estado in UPPERCASE
+     */
     function getStatusLabel(estado) {
-        if (!estado) return 'Processing';
-        const estadoLower = estado.toLowerCase();
-        if (estadoLower === 'completado') {
-            return 'Completed';
-        }
-        // Capitalize first letter and keep rest
-        return estado.charAt(0).toUpperCase() + estado.slice(1).toLowerCase();
+        if (!estado) return 'PROCESSING';
+        return String(estado).toUpperCase();
     }
 
     function tagToDisplayName(tag) {
@@ -428,16 +442,18 @@
             </div>
         `;
 
-        // Click on card body navigates to project
-        // Use hash (#) instead of query params (?) because npx serve strips query params
+        // Click on card body navigates to project (block if Processing)
         card.addEventListener('click', (e) => {
-            // Prevent default behavior to avoid any page reload
             e.preventDefault();
-            
-            if (!e.target.closest('.project-card-actions')) {
-                console.log('[Dashboard] Navigating to project:', project.id);
-                window.location.href = `3_project.html#id=${project.id}`;
+            if (e.target.closest('.project-card-actions')) return;
+
+            const estado = project.estado ? String(project.estado).toLowerCase().trim() : '';
+            if (estado === 'processing') {
+                openProcessingBlockedAlert();
+                return;
             }
+            console.log('[Dashboard] Navigating to project:', project.id);
+            window.location.href = `3_project.html#id=${project.id}`;
         });
 
         // Favorite button
@@ -547,6 +563,18 @@
         editSelectedTags = [];
     }
 
+    function openProcessingBlockedAlert() {
+        if (processingBlockedModal) processingBlockedModal.classList.add('visible');
+        if (processingBlockedBackdrop) processingBlockedBackdrop.classList.add('visible');
+        document.body.style.overflow = 'hidden';
+    }
+
+    function closeProcessingBlockedAlert() {
+        if (processingBlockedModal) processingBlockedModal.classList.remove('visible');
+        if (processingBlockedBackdrop) processingBlockedBackdrop.classList.remove('visible');
+        document.body.style.overflow = '';
+    }
+
     function saveEdit() {
         const projectId = editProjectIdInput.value;
         const newStatus = editProjectStatus.value;
@@ -608,6 +636,9 @@
     function resetModalState() {
         projectForm.style.display = 'block';
         processingLoader.style.display = 'none';
+        if (modalFooter) modalFooter.style.display = 'flex'; // Show footer buttons
+        if (processingLoaderProgressWrap) processingLoaderProgressWrap.style.display = 'none';
+        if (processingLoaderText) processingLoaderText.textContent = 'Processing documents...';
         projectForm.reset();
         uploadedFile = null;
         uploadedFileName = null;
@@ -831,15 +862,23 @@
         
         const tagValues = selectedTags.map(tag => displayNameToTag(tag));
         
-        // Show processing state
+        // Show processing state: form hidden, loader visible with upload progress
         projectForm.style.display = 'none';
         processingLoader.style.display = 'flex';
+        if (modalFooter) modalFooter.style.display = 'none'; // Hide footer buttons
         submitProjectBtn.disabled = true;
+
+        // Show upload progress UI (percentage + bar)
+        if (processingLoaderText) processingLoaderText.textContent = 'Uploading... 0%';
+        if (processingLoaderProgressWrap) processingLoaderProgressWrap.style.display = 'block';
+        if (processingLoaderProgressFill) processingLoaderProgressFill.style.width = '0%';
         
         if (!uploadedFileName || !uploadedSignedUrl) {
             window.showToast('Error: Upload URL was not generated. Please try uploading the file again.', 'error');
             projectForm.style.display = 'block';
             processingLoader.style.display = 'none';
+            if (modalFooter) modalFooter.style.display = 'flex'; // Show footer buttons again
+            if (processingLoaderProgressWrap) processingLoaderProgressWrap.style.display = 'none';
             submitProjectBtn.disabled = false;
             return;
         }
@@ -851,12 +890,13 @@
         try {
             // 1. Upload file to Google Cloud Storage using signed URL
             await uploadFileToGCS(uploadedFile, uploadedSignedUrl, (percent, loaded, total) => {
-                if (fileNameDisplay && uploadProgressContainer) {
-                    uploadProgressContainer.style.display = 'block';
-                    fileNameDisplay.textContent = `Uploading to cloud... ${percent}%`;
-                    progressBarFill.style.width = `${percent}%`;
-                }
+                if (processingLoaderText) processingLoaderText.textContent = `Uploading... ${percent}%`;
+                if (processingLoaderProgressFill) processingLoaderProgressFill.style.width = `${percent}%`;
             });
+
+            // Upload complete: switch to "Processing documents..." and hide progress bar
+            if (processingLoaderText) processingLoaderText.textContent = 'Processing documents...';
+            if (processingLoaderProgressWrap) processingLoaderProgressWrap.style.display = 'none';
 
             // 2. After upload is confirmed, call processing webhook
             const webhookResult = await callN8nFileWebhook(
@@ -887,6 +927,8 @@
             } else {
                 projectForm.style.display = 'block';
                 processingLoader.style.display = 'none';
+                if (modalFooter) modalFooter.style.display = 'flex'; // Show footer buttons again
+                if (processingLoaderProgressWrap) processingLoaderProgressWrap.style.display = 'none';
                 submitProjectBtn.disabled = false;
                 window.showToast(`Error: ${webhookResult.message}`, 'error');
             }
@@ -894,6 +936,8 @@
             console.error('Upload or processing error:', uploadError);
             projectForm.style.display = 'block';
             processingLoader.style.display = 'none';
+            if (modalFooter) modalFooter.style.display = 'flex'; // Show footer buttons again
+            if (processingLoaderProgressWrap) processingLoaderProgressWrap.style.display = 'none';
             submitProjectBtn.disabled = false;
             window.showToast(uploadError instanceof Error ? uploadError.message : 'Upload failed', 'error');
         }
@@ -920,6 +964,10 @@
     cancelEditBtn.addEventListener('click', closeEditModal);
     editModalBackdrop.addEventListener('click', closeEditModal);
     saveEditBtn.addEventListener('click', saveEdit);
+
+    // Processing blocked alert
+    if (processingBlockedOkBtn) processingBlockedOkBtn.addEventListener('click', closeProcessingBlockedAlert);
+    if (processingBlockedBackdrop) processingBlockedBackdrop.addEventListener('click', closeProcessingBlockedAlert);
 
     // Notifications
     notificationBtn.addEventListener('click', (e) => {

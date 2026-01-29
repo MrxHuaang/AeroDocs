@@ -257,15 +257,22 @@
                 <div id="progress-bar-fill" class="progress-bar-fill"></div>
               </div>
             </div>
-            <div
-              id="processing-loader"
-              class="processing-loader"
-              style="display: none"
-            >
-              <div class="spinner"></div>
-              <span>Processing documents...</span>
-            </div>
           </form>
+          <div
+            id="processing-loader"
+            class="processing-loader"
+            style="display: none"
+          >
+            <div class="spinner"></div>
+            <div class="processing-loader-content">
+              <span id="processing-loader-text">Processing documents...</span>
+              <div id="processing-loader-progress-wrap" class="processing-loader-progress-wrap" style="display: none">
+                <div class="progress-bar">
+                  <div id="processing-loader-progress-fill" class="progress-bar-fill"></div>
+                </div>
+              </div>
+            </div>
+          </div>
         </div>
         <div class="modal-footer">
           <button id="cancel-modal-btn" class="btn btn-secondary">
@@ -347,6 +354,24 @@
           <button id="save-edit-btn" class="btn btn-primary">
             Save Changes
           </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Processing blocked alert -->
+    <div id="processing-blocked-backdrop" class="modal-backdrop"></div>
+    <div id="processing-blocked-modal" class="modal modal-sm modal-alert">
+      <div class="modal-content">
+        <div class="modal-body modal-alert-body">
+          <div class="modal-alert-icon processing-icon" aria-hidden="true">
+            <svg xmlns="http://www.w3.org/2000/svg" width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <circle cx="12" cy="12" r="10"></circle>
+              <polyline points="12 6 12 12 16 14"></polyline>
+            </svg>
+          </div>
+          <h3 class="modal-alert-title">Project not ready</h3>
+          <p class="modal-alert-message">You can not open this project yet, files are being processed.</p>
+          <button id="processing-blocked-ok-btn" class="btn btn-primary btn-block">OK</button>
         </div>
       </div>
     </div>

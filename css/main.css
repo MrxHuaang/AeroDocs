@@ -24,9 +24,9 @@
     --status-completed-text: #047857; /* Emerald-700 */
     --status-completed-border: #A7F3D0; /* Emerald-200 */
     
-    --status-processing-bg: #EEF2FF; /* Indigo-50 */
-    --status-processing-text: #4338CA; /* Indigo-700 */
-    --status-processing-border: #C7D2FE; /* Indigo-200 */
+    --status-processing-bg: #F3E8FF; /* Purple-50 */
+    --status-processing-text: #6B21A8; /* Purple-700 */
+    --status-processing-border: #E9D5FF; /* Purple-200 */
     
     --status-pending-bg: #FFFBEB; /* Amber-50 */
     --status-pending-text: #B45309; /* Amber-700 */
