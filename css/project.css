@@ -1,12 +1,15 @@
-/* Project View - Modern Minimalist Design */
+/* Project View - Modern Redesign */
 
 .project-container {
     display: flex;
     height: calc(100vh - 64px);
-    max-width: 1400px;
+    max-width: 1440px;
     margin: 0 auto;
-    gap: var(--spacing-lg);
+    gap: var(--spacing-xl);
     padding: var(--spacing-lg);
+    background-image: 
+        radial-gradient(circle at 10% 20%, rgba(99, 102, 241, 0.02) 0%, transparent 50%),
+        radial-gradient(circle at 90% 80%, rgba(139, 92, 246, 0.02) 0%, transparent 50%);
 }
 
 .panel-header {
@@ -14,25 +17,51 @@
     justify-content: space-between;
     align-items: center;
     padding: var(--spacing-md) var(--spacing-lg);
+    padding-left: calc(var(--spacing-lg) + 8px);
     border-bottom: 1px solid var(--border-color);
     margin: calc(-1 * var(--spacing-lg));
-    margin-bottom: var(--spacing-lg);
-    background-color: var(--background-color);
+    margin-bottom: var(--spacing-md);
+    background-color: var(--surface-color);
     border-radius: var(--border-radius-lg) var(--border-radius-lg) 0 0;
+    position: relative;
+    height: 48px;
+    box-sizing: border-box;
+}
+
+/* Accent bar on panel headers */
+.panel-header::before {
+    content: '';
+    position: absolute;
+    left: 0;
+    top: 0;
+    bottom: 0;
+    width: 4px;
+    background-color: var(--primary-color);
+    border-radius: var(--border-radius-lg) 0 0 0;
+}
+
+/* Header row for title and actions */
+.panel-header-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    width: 100%;
 }
 
 .panel-header h3 {
-    font-size: 0.875rem;
-    font-weight: 600;
+    font-size: 0.75rem;
+    font-weight: 700;
     color: var(--text-primary);
     text-transform: uppercase;
     letter-spacing: 0.5px;
+    white-space: nowrap;
 }
 
 .panel-actions {
     display: flex;
     gap: var(--spacing-sm);
     align-items: center;
+    flex-wrap: wrap;
 }
 
 /* ICON BUTTON */
@@ -51,8 +80,8 @@
 }
 
 .btn-icon:hover {
-    background-color: var(--border-color);
-    color: var(--text-primary);
+    background-color: var(--primary-color-light);
+    color: var(--primary-color);
 }
 
 /* SMALL BUTTON */
@@ -61,34 +90,45 @@
     font-size: 0.75rem;
 }
 
-/* CHECKLIST SUMMARY */
+/* CHECKLIST SUMMARY - Redesigned */
 .checklist-summary {
-    font-size: 0.75rem;
-    color: var(--text-tertiary);
+    font-size: 0.625rem;
     display: flex;
-    gap: var(--spacing-sm);
+    gap: 4px;
     align-items: center;
+    flex-wrap: nowrap;
+    flex-shrink: 0;
+}
+
+.checklist-summary span {
+    display: inline-flex;
+    align-items: center;
+    padding: 2px 8px;
+    border-radius: var(--border-radius-full);
+    font-weight: 600;
 }
 
 .checklist-summary .stat-present {
+    background-color: rgba(16, 185, 129, 0.1);
     color: var(--status-completed-text);
-    font-weight: 500;
 }
 
 .checklist-summary .stat-missing {
+    background-color: rgba(239, 68, 68, 0.1);
     color: var(--status-failed-text);
-    font-weight: 500;
 }
 
 .checklist-summary .stat-percentage {
+    background-color: var(--primary-color-light);
     color: var(--primary-color);
-    font-weight: 600;
+    font-weight: 700;
 }
 
 /* LEFT PANEL - CHECKLIST */
 .checklist-panel {
     flex: 2;
-    min-width: 320px;
+    min-width: 340px;
+    max-width: 450px;
     background-color: var(--surface-color);
     border: 1px solid var(--border-color);
     border-radius: var(--border-radius-lg);
@@ -285,36 +325,73 @@
 /* RIGHT PANEL - CHATBOT */
 .chat-panel {
     flex: 3;
-    min-width: 320px;
+    min-width: 400px;
     background-color: var(--surface-color);
     border: 1px solid var(--border-color);
     border-radius: var(--border-radius-lg);
     display: flex;
     flex-direction: column;
     box-shadow: var(--box-shadow-sm);
+    padding-top: var(--spacing-lg);
+}
+
+/* Chat panel header needs same negative margin behavior */
+.chat-panel .panel-header {
+    margin: calc(-1 * var(--spacing-lg)) 0 var(--spacing-md) 0;
+    padding-left: calc(var(--spacing-lg) + 8px);
+    padding-right: var(--spacing-lg);
+}
+
+/* Chat header with accent */
+.chat-panel .panel-header::before {
+    background: linear-gradient(180deg, var(--primary-color) 0%, #8B5CF6 100%);
 }
 
 .chat-window {
     flex-grow: 1;
-    padding: var(--spacing-md);
+    padding: var(--spacing-lg);
     overflow-y: auto;
     display: flex;
     flex-direction: column;
+    background-image: 
+        radial-gradient(circle at 50% 0%, rgba(99, 102, 241, 0.03) 0%, transparent 40%);
+}
+
+/* Welcome area */
+.chat-welcome {
+    text-align: center;
+    padding: var(--spacing-xl);
+    color: var(--text-secondary);
+}
+
+.chat-welcome-icon {
+    width: 48px;
+    height: 48px;
+    background-color: var(--primary-color-light);
+    border-radius: var(--border-radius-lg);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin: 0 auto var(--spacing-md);
+    color: var(--primary-color);
 }
 
 .chat-messages {
     display: flex;
     flex-direction: column;
     gap: var(--spacing-md);
+    flex: 1;
 }
 
 .message {
-    max-width: 80%;
-    padding: var(--spacing-md);
+    max-width: 85%;
+    padding: var(--spacing-md) var(--spacing-lg);
     border-radius: var(--border-radius-lg);
-    line-height: 1.5;
+    line-height: 1.6;
     word-wrap: break-word;
     font-size: 0.875rem;
+    animation: fadeInUp 0.3s ease-out;
+    box-shadow: var(--box-shadow-sm);
 }
 
 .user-message {
@@ -327,10 +404,36 @@
 
 .ai-message {
     align-self: flex-start;
-    background-color: var(--background-color);
+    background-color: var(--surface-color);
     color: var(--text-primary);
     border: 1px solid var(--border-color);
     border-bottom-left-radius: var(--border-radius-sm);
+    position: relative;
+    padding-left: calc(var(--spacing-lg) + 40px);
+    padding-top: var(--spacing-md);
+    padding-bottom: var(--spacing-md);
+}
+
+/* Thinking indicator needs special padding for avatar */
+#ai-thinking-indicator {
+    min-height: 44px;
+    display: flex;
+    align-items: center;
+}
+
+/* AI Avatar - Using DiceBear bottts-neutral style */
+.ai-message::before {
+    content: '';
+    position: absolute;
+    left: var(--spacing-md);
+    top: var(--spacing-md);
+    width: 28px;
+    height: 28px;
+    border-radius: 50%;
+    background-image: url("https://api.dicebear.com/7.x/bottts-neutral/svg?seed=aerodocs&backgroundColor=6366f1");
+    background-size: cover;
+    background-position: center;
+    box-shadow: 0 2px 8px rgba(99, 102, 241, 0.3);
 }
 
 /* Markdown styling for AI messages */
@@ -453,7 +556,8 @@
 .typing-indicator {
     display: flex;
     align-items: center;
-    gap: 4px;
+    gap: 5px;
+    padding: 4px 0;
 }
 
 .typing-indicator span {
@@ -462,15 +566,22 @@
     background-color: var(--primary-color);
     border-radius: 50%;
     display: inline-block;
-    animation: bounce 1.4s infinite ease-in-out both;
+    animation: typingBounce 1.2s infinite ease-in-out;
 }
 
-.typing-indicator span:nth-child(1) { animation-delay: -0.32s; }
-.typing-indicator span:nth-child(2) { animation-delay: -0.16s; }
+.typing-indicator span:nth-child(1) { animation-delay: 0s; }
+.typing-indicator span:nth-child(2) { animation-delay: 0.15s; }
+.typing-indicator span:nth-child(3) { animation-delay: 0.3s; }
 
-@keyframes bounce {
-    0%, 80%, 100% { transform: scale(0); }
-    40% { transform: scale(1.0); }
+@keyframes typingBounce {
+    0%, 60%, 100% { 
+        transform: translateY(0);
+        opacity: 0.4;
+    }
+    30% { 
+        transform: translateY(-6px);
+        opacity: 1;
+    }
 }
 
 .chat-input-area {

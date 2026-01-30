@@ -411,15 +411,17 @@
         if (!project || !project.name) return;
         
         const card = document.createElement('div');
-        card.className = 'project-card';
         card.dataset.projectId = project.id;
         
-        // Use estado field instead of status
+        // Use estado field for status
         const estado = project.estado || null;
         const statusClass = getStatusClass(estado);
         const statusLabel = getStatusLabel(estado);
         
-        // Ensure tags is always an array (Firebase may return object or string)
+        // Add status class to card for accent border color
+        card.className = `project-card ${statusClass}`;
+        
+        // Ensure tags is always an array
         let tags = project.tags || [];
         if (!Array.isArray(tags)) {
             tags = typeof tags === 'string' ? tags.split(',').map(t => t.trim()) : [];
@@ -431,42 +433,60 @@
             ? `<div class="project-card-tags">${tagDisplayNames.map(tag => `<span class="project-tag">${tag}</span>`).join('')}</div>`
             : '';
 
+        // Progress calculation
         const procesados = Number.isFinite(project.procesados) ? project.procesados : 0;
-        const totalEsperados = project.totalEsperados;
-        const progressText = (totalEsperados === null || totalEsperados === undefined)
-            ? 'Starting process'
-            : `Files processed ${procesados}/${totalEsperados}`;
+        const totalEsperados = project.totalEsperados || 0;
+        const progressPercent = totalEsperados > 0 ? Math.round((procesados / totalEsperados) * 100) : 0;
+        const progressText = totalEsperados === 0
+            ? 'Starting...'
+            : `${procesados}/${totalEsperados} files`;
+
+        // Determine project type
+        const projectType = project.type || (project.name.includes('ESN') ? 'engine' : 'aircraft');
+        const typeIcon = projectType === 'engine' 
+            ? `<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"></circle><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"></path></svg>`
+            : `<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17.8 19.2L16 11l3.5-3.5C21 6 21.5 4 21 3c-1-.5-3 0-4.5 1.5L13 8 4.8 6.2c-.5-.1-.9.1-1.1.5l-.3.5c-.2.5-.1 1 .3 1.3L9 12l-2 3H4l-1 1 3 2 2 3 1-1v-3l3-2 3.5 5.3c.3.4.8.5 1.3.3l.5-.2c.4-.3.6-.7.5-1.2z"></path></svg>`;
 
         card.innerHTML = `
-            <div class="project-card-header">
-                <h3>${project.name}</h3>
-                <div class="project-card-actions">
-                    <div class="project-card-actions-row">
-                        <button class="card-action-btn favorite-btn ${isFav ? 'active' : ''}" title="Add to favorites" data-id="${project.id}">
-                            <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                                <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"></polygon>
-                            </svg>
-                        </button>
-                        <button class="card-action-btn edit-btn" title="Edit project" data-id="${project.id}">
-                            <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                                <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path>
-                                <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path>
-                            </svg>
-                        </button>
-                        <button class="card-action-btn delete-btn" title="Delete project" data-id="${project.id}">
-                            <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                                <polyline points="3 6 5 6 21 6"></polyline>
-                                <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
-                            </svg>
-                        </button>
+            <div class="project-card-content">
+                <div class="project-card-header">
+                    <div class="project-type-icon" title="${projectType === 'engine' ? 'Engine' : 'Aircraft'}">
+                        ${typeIcon}
                     </div>
-                    <div class="project-process-indicator" title="Processing progress">${progressText}</div>
+                    <div style="flex: 1; margin-left: var(--spacing-md);">
+                        <h3>${project.name}</h3>
+                        <span class="status-badge ${statusClass}" style="margin-top: 4px;">${statusLabel}</span>
+                    </div>
+                    <div class="project-card-actions">
+                        <div class="project-card-actions-row">
+                            <button class="card-action-btn favorite-btn ${isFav ? 'active' : ''}" title="Add to favorites" data-id="${project.id}">
+                                <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                    <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"></polygon>
+                                </svg>
+                            </button>
+                            <button class="card-action-btn edit-btn" title="Edit project" data-id="${project.id}">
+                                <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                    <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path>
+                                    <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path>
+                                </svg>
+                            </button>
+                            <button class="card-action-btn delete-btn" title="Delete project" data-id="${project.id}">
+                                <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                    <polyline points="3 6 5 6 21 6"></polyline>
+                                    <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
+                                </svg>
+                            </button>
+                        </div>
+                    </div>
                 </div>
-            </div>
-            ${tagsHtml}
-            <div class="project-card-footer">
-                <span class="status-badge ${statusClass}">${statusLabel}</span>
-                <span>Updated ${project.lastUpdated || 'Unknown'}</span>
+                ${tagsHtml}
+                <div class="project-card-footer">
+                    <span class="project-process-indicator">${progressText}</span>
+                    <span>Updated ${project.lastUpdated || 'Recently'}</span>
+                </div>
+                <div class="project-progress">
+                    <div class="project-progress-fill" style="width: ${progressPercent}%"></div>
+                </div>
             </div>
         `;
 
@@ -524,8 +544,30 @@
         return projects;
     }
 
+    // ========================================
+    // SKELETON LOADER
+    // ========================================
+    function renderSkeletonCards(count = 6) {
+        let html = '';
+        for (let i = 0; i < count; i++) {
+            html += `
+                <div class="skeleton-card">
+                    <div class="skeleton skeleton-title"></div>
+                    <div class="skeleton skeleton-badge"></div>
+                    <div class="skeleton-tags">
+                        <div class="skeleton skeleton-tag"></div>
+                        <div class="skeleton skeleton-tag"></div>
+                    </div>
+                    <div class="skeleton skeleton-text"></div>
+                </div>
+            `;
+        }
+        return html;
+    }
+
     async function loadProjects() {
-        projectsGrid.innerHTML = '<p class="loading-projects">Loading projects...</p>';
+        // Show skeleton loaders while loading
+        projectsGrid.innerHTML = renderSkeletonCards(6);
         
         // Load from Firebase if service is available (realtime subscription)
         if (projectsService) {
