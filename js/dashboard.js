@@ -913,7 +913,8 @@
                 tags: tagValues,
                 serie: serialNumber,
                 type: type,
-                procesados: 0
+                procesados: 0,
+                total_esperados: 99
             };
 
             const batch = db.batch();
