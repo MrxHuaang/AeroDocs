@@ -382,13 +382,28 @@
 /* PROJECT CARD ACTIONS */
 .project-card-actions {
     display: flex;
+    flex-direction: column;
+    align-items: flex-end;
+    gap: 6px;
+}
+
+.project-card-actions-row {
+    display: flex;
     gap: 4px;
     opacity: 0;
     transition: opacity var(--transition-fast);
 }
 
-.project-card:hover .project-card-actions {
+.project-card:hover .project-card-actions-row {
     opacity: 1;
+}
+
+.project-process-indicator {
+    font-size: 0.75rem;
+    color: var(--text-tertiary);
+    line-height: 1.2;
+    text-align: right;
+    max-width: 180px;
 }
 
 .card-action-btn {

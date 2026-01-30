@@ -10,6 +10,9 @@ class ProjectsService {
         this.collectionName = 'proyectos_lista';
         this.projects = [];
         this.loading = false;
+        this.unsubscribeProjects = null;
+        this.realtimeActive = false;
+        this._hasReceivedFirstSnapshot = false;
         
         // Callbacks for UI updates
         this.onProjectsLoaded = null;
@@ -59,27 +62,126 @@ class ProjectsService {
         }
         
         const name = data.name;
+
+        // Prefer new schema field `estado` (processing/completed/failed/...)
+        // Keep a legacy-friendly `status` (PROCESSING/COMPLETED/FAILED/...) for older UI code.
+        let estado = data.estado || null;
+        if (!estado && data.status) {
+            const legacy = String(data.status).toUpperCase().trim();
+            if (legacy === 'PROCESSING') estado = 'processing';
+            else if (legacy === 'COMPLETED') estado = 'completed';
+            else if (legacy === 'FAILED') estado = 'failed';
+            else if (legacy === 'PENDING_REVIEW') estado = 'pending_review';
+        }
+        const estadoLower = String(estado || 'processing').toLowerCase().trim();
+        let status = data.status || null;
+        if (!status) {
+            if (estadoLower === 'processing') status = 'PROCESSING';
+            else if (estadoLower === 'completed' || estadoLower === 'completado') status = 'COMPLETED';
+            else if (estadoLower === 'failed') status = 'FAILED';
+            else if (estadoLower === 'pending_review' || estadoLower === 'pending review') status = 'PENDING_REVIEW';
+            else status = 'PROCESSING';
+        }
         
         // Handle tags: Firestore stores as string "tag1, tag2, tag3" or array
         let tags = data.tags || [];
         if (typeof tags === 'string') {
             tags = tags.split(',').map(t => t.trim()).filter(t => t.length > 0);
         }
+
+        // Real-time processing counters (new)
+        const toNumberOrNull = (v) => {
+            if (v === null || v === undefined) return null;
+            if (typeof v === 'number') return Number.isFinite(v) ? v : null;
+            const parsed = parseInt(String(v), 10);
+            return Number.isFinite(parsed) ? parsed : null;
+        };
+        const procesados = toNumberOrNull(data.procesados);
+        const totalEsperados = toNumberOrNull(data.total_esperados);
         
         return {
             id: docId,
             name: name,
             type: type,
             serialNumber: serialNumber,
-            status: data.status || 'PROCESSING',
-            estado: data.estado || null,
+            status: status,
+            estado: estado,
             tags: tags,
             createdAt: data.createdAt?.toDate ? data.createdAt.toDate() : new Date(),
             lastUpdated: data.lastUpdated || 'Unknown',
             objectName: data.objectName || null,
             // Additional metadata
-            docsCount: data.docsCount || 0
+            docsCount: data.docsCount || 0,
+            procesados: procesados ?? 0,
+            totalEsperados: totalEsperados
         };
+    }
+
+    /**
+     * Start real-time subscription to proyectos_lista
+     * Keeps this.projects updated and triggers onProjectsLoaded on every change.
+     */
+    startRealtimeProjects() {
+        if (this.realtimeActive && this.unsubscribeProjects) return;
+
+        try {
+            const db = this.firebaseService.getFirestore();
+            if (!db) {
+                console.warn('Firestore not initialized');
+                if (this.onError) this.onError('Firebase no está disponible. Verifica tu conexión a internet.');
+                return;
+            }
+
+            this.realtimeActive = true;
+            this._hasReceivedFirstSnapshot = false;
+            this.setLoading(true);
+
+            console.log('[Projects] Starting realtime subscription...');
+            this.unsubscribeProjects = db.collection(this.collectionName).onSnapshot(
+                (snapshot) => {
+                    this.projects = [];
+                    snapshot.forEach((doc) => {
+                        const project = this.parseProject(doc);
+                        this.projects.push(project);
+                    });
+
+                    // Sort by createdAt descending (newest first)
+                    this.projects.sort((a, b) => b.createdAt - a.createdAt);
+
+                    if (!this._hasReceivedFirstSnapshot) {
+                        this._hasReceivedFirstSnapshot = true;
+                        this.setLoading(false);
+                        console.log(`[Projects] Realtime initial load: ${this.projects.length} projects`);
+                    }
+
+                    if (this.onProjectsLoaded) {
+                        this.onProjectsLoaded(this.projects);
+                    }
+                },
+                (error) => {
+                    console.error('Error in realtime subscription:', error);
+                    this.setLoading(false);
+                    if (this.onError) this.onError('Error al escuchar cambios en proyectos. Verifica tu conexión.');
+                }
+            );
+        } catch (error) {
+            console.error('Error starting realtime subscription:', error);
+            this.setLoading(false);
+            if (this.onError) this.onError('Error al iniciar tiempo real. Verifica tu conexión.');
+        }
+    }
+
+    /**
+     * Stop real-time subscription (optional cleanup).
+     */
+    stopRealtimeProjects() {
+        try {
+            if (this.unsubscribeProjects) this.unsubscribeProjects();
+        } finally {
+            this.unsubscribeProjects = null;
+            this.realtimeActive = false;
+            this._hasReceivedFirstSnapshot = false;
+        }
     }
 
     /**

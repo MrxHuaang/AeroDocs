@@ -115,15 +115,18 @@
     const N8N_UPLOAD_URL_WEBHOOK = 'https://n8n.srv1026018.hstgr.cloud/webhook/generate-upload-url';
 
     /**
-     * Calls the n8n webhook to generate an upload URL for the file
-     * @param {string} fileName - The file name (e.g., "project-files.zip")
+     * Calls the n8n webhook to generate an upload URL for the file.
+     * NOTE: New flow requires docId (Firestore document ID).
+     * @param {string} fileName - Object name to upload (must include "entradas/" prefix)
      * @param {string} contentType - The content type (e.g., "application/zip" or "application/vnd.rar")
+     * @param {string} docId - Firestore document ID (SERIE_TYPE)
      * @returns {Promise} - Resolves with webhook response containing signedUrl
      */
-    async function generateUploadUrl(fileName, contentType) {
+    async function generateUploadUrl(fileName, contentType, docId) {
         const payload = {
             fileName: fileName,
-            contentType: contentType
+            contentType: contentType,
+            docId: docId
         };
 
         console.log('Generating upload URL for:', payload);
@@ -200,10 +203,11 @@
      * Uses GCS resumable upload: POST to start session, then PUT file to Location URI.
      * @param {File} file - The file to upload
      * @param {string} signedUrl - Signed URL from generate-upload-url
+     * @param {string} docId - Firestore document ID to send as metadata
      * @param {function} onProgress - Optional callback(percent, loaded, total)
      * @returns {Promise<void>}
      */
-    function uploadFileToGCS(file, signedUrl, onProgress) {
+    function uploadFileToGCS(file, signedUrl, docId, onProgress) {
         return new Promise((resolve, reject) => {
             (async () => {
                 try {
@@ -214,7 +218,8 @@
                         method: 'POST',
                         headers: {
                             'Content-Type': file.type || 'application/octet-stream',
-                            'x-goog-resumable': 'start'
+                            'x-goog-resumable': 'start',
+                            'x-goog-meta-id': docId
                         }
                     });
 
@@ -252,6 +257,7 @@
 
                     xhr.open('PUT', uploadUri);
                     xhr.setRequestHeader('Content-Type', file.type || 'application/octet-stream');
+                    xhr.setRequestHeader('x-goog-meta-id', docId);
                     xhr.send(file);
                 } catch (err) {
                     reject(err);
@@ -373,10 +379,23 @@
             : (window.mockProjects || []);
             
         const total = projects.length;
-        const completed = projects.filter(p => p.status === 'COMPLETED').length;
-        const processing = projects.filter(p => p.status === 'PROCESSING').length;
-        const pending = projects.filter(p => p.status === 'PENDING_REVIEW').length;
-        const failed = projects.filter(p => p.status === 'FAILED').length;
+        const estadoFor = (p) => String(p?.estado || p?.status || '').toLowerCase().trim();
+        const completed = projects.filter(p => {
+            const e = estadoFor(p);
+            return e === 'completed' || e === 'completado' || e === 'completed'.toLowerCase() || p.status === 'COMPLETED';
+        }).length;
+        const processing = projects.filter(p => {
+            const e = estadoFor(p);
+            return e === 'processing' || p.status === 'PROCESSING';
+        }).length;
+        const pending = projects.filter(p => {
+            const e = estadoFor(p);
+            return e === 'pending_review' || e === 'pending review' || p.status === 'PENDING_REVIEW';
+        }).length;
+        const failed = projects.filter(p => {
+            const e = estadoFor(p);
+            return e === 'failed' || p.status === 'FAILED';
+        }).length;
 
         if (statTotal) statTotal.textContent = total;
         if (statCompleted) statCompleted.textContent = completed;
@@ -412,27 +431,36 @@
             ? `<div class="project-card-tags">${tagDisplayNames.map(tag => `<span class="project-tag">${tag}</span>`).join('')}</div>`
             : '';
 
+        const procesados = Number.isFinite(project.procesados) ? project.procesados : 0;
+        const totalEsperados = project.totalEsperados;
+        const progressText = (totalEsperados === null || totalEsperados === undefined)
+            ? 'Starting process'
+            : `Files processed ${procesados}/${totalEsperados}`;
+
         card.innerHTML = `
             <div class="project-card-header">
                 <h3>${project.name}</h3>
                 <div class="project-card-actions">
-                    <button class="card-action-btn favorite-btn ${isFav ? 'active' : ''}" title="Add to favorites" data-id="${project.id}">
-                        <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                            <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"></polygon>
-                        </svg>
-                    </button>
-                    <button class="card-action-btn edit-btn" title="Edit project" data-id="${project.id}">
-                        <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                            <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path>
-                            <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path>
-                        </svg>
-                    </button>
-                    <button class="card-action-btn delete-btn" title="Delete project" data-id="${project.id}">
-                        <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                            <polyline points="3 6 5 6 21 6"></polyline>
-                            <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
-                        </svg>
-                    </button>
+                    <div class="project-card-actions-row">
+                        <button class="card-action-btn favorite-btn ${isFav ? 'active' : ''}" title="Add to favorites" data-id="${project.id}">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"></polygon>
+                            </svg>
+                        </button>
+                        <button class="card-action-btn edit-btn" title="Edit project" data-id="${project.id}">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path>
+                                <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path>
+                            </svg>
+                        </button>
+                        <button class="card-action-btn delete-btn" title="Delete project" data-id="${project.id}">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <polyline points="3 6 5 6 21 6"></polyline>
+                                <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
+                            </svg>
+                        </button>
+                    </div>
+                    <div class="project-process-indicator" title="Processing progress">${progressText}</div>
                 </div>
             </div>
             ${tagsHtml}
@@ -499,9 +527,13 @@
     async function loadProjects() {
         projectsGrid.innerHTML = '<p class="loading-projects">Loading projects...</p>';
         
-        // Load from Firebase if service is available
+        // Load from Firebase if service is available (realtime subscription)
         if (projectsService) {
-            await projectsService.loadProjects();
+            if (typeof projectsService.startRealtimeProjects === 'function') {
+                projectsService.startRealtimeProjects();
+            } else {
+                await projectsService.loadProjects();
+            }
         }
         
         projectsGrid.innerHTML = '';
@@ -789,49 +821,19 @@
         uploadedFile = file;
         dropZone.querySelector('p').textContent = `File selected: ${file.name}`;
         isUploadComplete = false;
-        simulateUpload(file);
+        // New flow: we no longer generate Signed URL on file selection.
+        // Show selected file and wait for "Start Processing".
+        uploadProgressContainer.style.display = 'block';
+        fileNameDisplay.textContent = `Ready to upload: ${file.name}`;
+        progressBarFill.style.width = '0%';
+        isUploading = false;
+        updateSubmitButtonState();
     }
     
     async function simulateUpload(file) {
-        isUploading = true;
-        submitProjectBtn.disabled = true;
-        uploadProgressContainer.style.display = 'block';
-        fileNameDisplay.textContent = `Uploading ${file.name}...`;
-        
-        // Determine content type based on file extension
-        const fileExtension = file.name.substring(file.name.lastIndexOf('.')).toLowerCase();
-        const contentType = fileExtension === '.zip' 
-            ? 'application/zip' 
-            : fileExtension === '.rar' 
-            ? 'application/vnd.rar' 
-            : 'application/octet-stream';
-        
-        // Generate upload URL while uploading
-        const uploadUrlResult = await generateUploadUrl(file.name, contentType);
-        
-        if (uploadUrlResult.success) {
-            console.log('Signed URL:', uploadUrlResult.signedUrl);
-            uploadedFileName = uploadUrlResult.fileName;
-            uploadedSignedUrl = uploadUrlResult.signedUrl;
-        } else {
-            console.warn('Failed to generate upload URL:', uploadUrlResult.message);
-            uploadedFileName = null;
-            uploadedSignedUrl = null;
-        }
-        
-        // Simulate upload progress
-        let progress = 0;
-        const interval = setInterval(() => {
-            progress += 10;
-            progressBarFill.style.width = `${progress}%`;
-            if (progress >= 100) {
-                clearInterval(interval);
-                fileNameDisplay.textContent = `Upload complete: ${file.name}`;
-                isUploading = false;
-                isUploadComplete = true;
-                updateSubmitButtonState();
-            }
-        }, 100);
+        // Deprecated in new flow. Kept for backward-compat but does nothing.
+        console.warn('[Dashboard] simulateUpload is deprecated in new flow.');
+        return;
     }
 
     function updateSubmitButtonState() {
@@ -840,7 +842,7 @@
             ? esnInput.value.trim() !== '' 
             : type === 'aircraft' ? msnInput.value.trim() !== '' : false;
         
-        submitProjectBtn.disabled = !(type && hasSerialNumber && uploadedFile && isUploadComplete && !isUploading);
+        submitProjectBtn.disabled = !(type && hasSerialNumber && uploadedFile && !isUploading);
     }
 
     async function handleFormSubmit(e) {
@@ -855,8 +857,13 @@
             return;
         }
         
-        if (!isUploadComplete || isUploading) {
-            window.showToast('Please wait for the file upload to complete', 'error');
+        if (isUploading) {
+            window.showToast('Upload in progress. Please wait.', 'error');
+            return;
+        }
+
+        if (!uploadedFile) {
+            window.showToast('Please select a .zip or .rar file to upload', 'error');
             return;
         }
         
@@ -867,79 +874,112 @@
         processingLoader.style.display = 'flex';
         if (modalFooter) modalFooter.style.display = 'none'; // Hide footer buttons
         submitProjectBtn.disabled = true;
+        isUploading = true;
 
         // Show upload progress UI (percentage + bar)
         if (processingLoaderText) processingLoaderText.textContent = 'Uploading... 0%';
         if (processingLoaderProgressWrap) processingLoaderProgressWrap.style.display = 'block';
         if (processingLoaderProgressFill) processingLoaderProgressFill.style.width = '0%';
         
-        if (!uploadedFileName || !uploadedSignedUrl) {
-            window.showToast('Error: Upload URL was not generated. Please try uploading the file again.', 'error');
-            projectForm.style.display = 'block';
-            processingLoader.style.display = 'none';
-            if (modalFooter) modalFooter.style.display = 'flex'; // Show footer buttons again
-            if (processingLoaderProgressWrap) processingLoaderProgressWrap.style.display = 'none';
-            submitProjectBtn.disabled = false;
-            return;
-        }
-
-        const objectName = uploadedFileName;
-        const tagsString = selectedTags.join(', ');
         const timestamp = Date.now();
+        const docId = `${serialNumber}_${type}`; // SERIE_TYPE
+        const firestorePath = `proyectos/${docId}`;
+        const objectNameToUpload = `entradas/${uploadedFile?.name || 'project-files.zip'}`;
 
         try {
-            // 1. Upload file to Google Cloud Storage using signed URL
-            await uploadFileToGCS(uploadedFile, uploadedSignedUrl, (percent, loaded, total) => {
+            // 0) Create Firestore documents (proyectos + proyectos_lista) with the same ID
+            if (!window.firebaseService) {
+                throw new Error('Firebase service not available');
+            }
+            window.firebaseService.initialize();
+            const db = window.firebaseService.getFirestore();
+            if (!db) {
+                throw new Error('Firestore not initialized');
+            }
+
+            const proyectoDoc = {
+                estado: 'processing',
+                name: projectName,
+                tags: tagValues,
+                serie: serialNumber,
+                type: type,
+                path: firestorePath,
+                docs: {}
+            };
+
+            const proyectoListaDoc = {
+                estado: 'processing',
+                name: projectName,
+                tags: tagValues,
+                serie: serialNumber,
+                type: type,
+                procesados: 0
+            };
+
+            const batch = db.batch();
+            batch.set(db.collection('proyectos').doc(docId), proyectoDoc);
+            batch.set(db.collection('proyectos_lista').doc(docId), proyectoListaDoc);
+            await batch.commit();
+
+            // 1) Generate signed URL (must include entradas/ prefix and docId)
+            const fileExtension = uploadedFile.name.substring(uploadedFile.name.lastIndexOf('.')).toLowerCase();
+            const contentType = fileExtension === '.zip'
+                ? 'application/zip'
+                : fileExtension === '.rar'
+                ? 'application/vnd.rar'
+                : 'application/octet-stream';
+
+            const uploadUrlResult = await generateUploadUrl(objectNameToUpload, contentType, docId);
+            if (!uploadUrlResult.success) {
+                // Mark as failed if URL cannot be generated
+                await db.collection('proyectos').doc(docId).update({ estado: 'failed' });
+                await db.collection('proyectos_lista').doc(docId).update({ estado: 'failed' });
+                throw new Error(uploadUrlResult.message || 'Error generating upload URL');
+            }
+
+            uploadedFileName = uploadUrlResult.fileName;
+            uploadedSignedUrl = uploadUrlResult.signedUrl;
+
+            // 2) Upload file to Google Cloud Storage using signed URL + metadata header
+            await uploadFileToGCS(uploadedFile, uploadedSignedUrl, docId, (percent, loaded, total) => {
                 if (processingLoaderText) processingLoaderText.textContent = `Uploading... ${percent}%`;
                 if (processingLoaderProgressFill) processingLoaderProgressFill.style.width = `${percent}%`;
             });
 
-            // Upload complete: switch to "Processing documents..." and hide progress bar
-            if (processingLoaderText) processingLoaderText.textContent = 'Processing documents...';
+            // Upload complete: backend processing starts automatically (no webhook call)
+            if (processingLoaderText) processingLoaderText.textContent = 'Upload complete. Processing started automatically...';
             if (processingLoaderProgressWrap) processingLoaderProgressWrap.style.display = 'none';
 
-            // 2. After upload is confirmed, call processing webhook
-            const webhookResult = await callN8nFileWebhook(
-                objectName,
-                projectName,
-                type,
-                serialNumber,
-                tagsString
-            );
-        
-            if (webhookResult.success) {
-                const newProject = {
-                    id: `proj-${timestamp}`,
-                    name: projectName,
-                    type: type,
-                    serialNumber: serialNumber,
-                    tags: tagValues,
-                    status: 'PROCESSING',
-                    lastUpdated: 'Just now',
-                    createdAt: new Date(),
-                    objectName: objectName
-                };
-                window.mockProjects.unshift(newProject);
-                addNotification(`New project "${projectName}" created and processing started`, newProject.id);
-                toggleModal(false);
-                loadProjects();
-                window.showToast('Project created successfully! Processing started.', 'success');
-            } else {
-                projectForm.style.display = 'block';
-                processingLoader.style.display = 'none';
-                if (modalFooter) modalFooter.style.display = 'flex'; // Show footer buttons again
-                if (processingLoaderProgressWrap) processingLoaderProgressWrap.style.display = 'none';
-                submitProjectBtn.disabled = false;
-                window.showToast(`Error: ${webhookResult.message}`, 'error');
-            }
+            // Reload projects so the newly created one appears immediately
+            await loadProjects();
+            addNotification(`New project "${projectName}" created. Processing started automatically.`, docId);
+            toggleModal(false);
+            window.showToast('Project created successfully! Processing started automatically.', 'success');
         } catch (uploadError) {
             console.error('Upload or processing error:', uploadError);
+
+            // Try to mark project as failed (best-effort)
+            try {
+                if (window.firebaseService) {
+                    const db = window.firebaseService.getFirestore();
+                    if (db && serialNumber && type) {
+                        const docId = `${serialNumber}_${type}`;
+                        await db.collection('proyectos').doc(docId).update({ estado: 'failed' });
+                        await db.collection('proyectos_lista').doc(docId).update({ estado: 'failed' });
+                    }
+                }
+            } catch (e2) {
+                console.warn('Failed to update Firestore estado=failed:', e2);
+            }
+
             projectForm.style.display = 'block';
             processingLoader.style.display = 'none';
             if (modalFooter) modalFooter.style.display = 'flex'; // Show footer buttons again
             if (processingLoaderProgressWrap) processingLoaderProgressWrap.style.display = 'none';
             submitProjectBtn.disabled = false;
             window.showToast(uploadError instanceof Error ? uploadError.message : 'Upload failed', 'error');
+        } finally {
+            isUploading = false;
         }
     }
 
@@ -1060,6 +1100,16 @@
             window.firebaseService.initialize();
             projectsService = new ProjectsService(window.firebaseService);
             console.log('Firebase and ProjectsService initialized');
+
+            // Realtime updates (for procesados/total_esperados indicator)
+            projectsService.onProjectsLoaded = () => {
+                loadProjects();
+                updateStats();
+            };
+            projectsService.onError = (msg) => window.showToast(msg, 'error');
+            if (typeof projectsService.startRealtimeProjects === 'function') {
+                projectsService.startRealtimeProjects();
+            }
         } else {
             console.warn('Firebase service not available, using mock data');
         }
