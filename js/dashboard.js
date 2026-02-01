@@ -201,23 +201,27 @@
     /**
      * Uploads file to Google Cloud Storage using signed URL (resumable upload).
      * Uses GCS resumable upload: POST to start session, then PUT file to Location URI.
+     * IMPORTANT: contentType MUST match exactly what was used when generating the signed URL,
+     * otherwise GCS returns MalformedSecurityHeader (content-type in signedheaders but not in request).
      * @param {File} file - The file to upload
      * @param {string} signedUrl - Signed URL from generate-upload-url
      * @param {string} docId - Firestore document ID to send as metadata
+     * @param {string} contentType - Content-Type used when generating signed URL (must match exactly)
      * @param {function} onProgress - Optional callback(percent, loaded, total)
      * @returns {Promise<void>}
      */
-    function uploadFileToGCS(file, signedUrl, docId, onProgress) {
+    function uploadFileToGCS(file, signedUrl, docId, contentType, onProgress) {
         return new Promise((resolve, reject) => {
             (async () => {
                 try {
                     if (onProgress) onProgress(0, 0, file.size);
 
                     // Step 1: Start resumable session with GCS
+                    // CRITICAL: Use the SAME contentType that was used when signing the URL
                     const initResponse = await fetch(signedUrl, {
                         method: 'POST',
                         headers: {
-                            'Content-Type': file.type || 'application/octet-stream',
+                            'Content-Type': contentType,
                             'x-goog-resumable': 'start',
                             'x-goog-meta-id': docId
                         }
@@ -256,7 +260,7 @@
                     });
 
                     xhr.open('PUT', uploadUri);
-                    xhr.setRequestHeader('Content-Type', file.type || 'application/octet-stream');
+                    xhr.setRequestHeader('Content-Type', contentType);
                     xhr.setRequestHeader('x-goog-meta-id', docId);
                     xhr.send(file);
                 } catch (err) {
@@ -984,7 +988,8 @@
             uploadedSignedUrl = uploadUrlResult.signedUrl;
 
             // 2) Upload file to Google Cloud Storage using signed URL + metadata header
-            await uploadFileToGCS(uploadedFile, uploadedSignedUrl, docId, (percent, loaded, total) => {
+            // Pass contentType so headers match what n8n used when signing (fixes MalformedSecurityHeader)
+            await uploadFileToGCS(uploadedFile, uploadedSignedUrl, docId, contentType, (percent, loaded, total) => {
                 if (processingLoaderText) processingLoaderText.textContent = `Uploading... ${percent}%`;
                 if (processingLoaderProgressFill) processingLoaderProgressFill.style.width = `${percent}%`;
             });
