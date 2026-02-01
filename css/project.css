@@ -109,12 +109,17 @@
 }
 
 .checklist-summary .stat-present {
-    background-color: rgba(16, 185, 129, 0.1);
+    background-color: var(--status-completed-bg);
     color: var(--status-completed-text);
 }
 
+.checklist-summary .stat-media {
+    background-color: var(--status-pending-bg);
+    color: var(--status-pending-text);
+}
+
 .checklist-summary .stat-missing {
-    background-color: rgba(239, 68, 68, 0.1);
+    background-color: var(--status-failed-bg);
     color: var(--status-failed-text);
 }
 
@@ -122,6 +127,38 @@
     background-color: var(--primary-color-light);
     color: var(--primary-color);
     font-weight: 700;
+}
+
+/* Confidence tags (docs list) */
+.confidence-badge {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    padding: 2px 8px;
+    border-radius: var(--border-radius-full);
+    font-size: 0.625rem;
+    font-weight: 700;
+    letter-spacing: 0.2px;
+    border: 1px solid var(--border-color);
+    white-space: nowrap;
+}
+
+.confidence-alta {
+    background-color: var(--status-completed-bg);
+    color: var(--status-completed-text);
+    border-color: var(--status-completed-border);
+}
+
+.confidence-media {
+    background-color: var(--status-pending-bg);
+    color: var(--status-pending-text);
+    border-color: var(--status-pending-border);
+}
+
+.confidence-baja {
+    background-color: var(--status-failed-bg);
+    color: var(--status-failed-text);
+    border-color: var(--status-failed-border);
 }
 
 /* LEFT PANEL - CHECKLIST */

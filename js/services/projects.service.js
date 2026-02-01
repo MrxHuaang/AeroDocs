@@ -111,6 +111,7 @@ class ProjectsService {
             lastUpdated: data.lastUpdated || 'Unknown',
             objectName: data.objectName || null,
             // Additional metadata
+            docs: data.docs || null,
             docsCount: data.docsCount || 0,
             procesados: procesados ?? 0,
             totalEsperados: totalEsperados

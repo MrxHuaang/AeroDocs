@@ -120,6 +120,197 @@
         `;
     }
 
+    // ========================================
+    // UI RENDERING - DOCS (from proyectos_lista.docs)
+    // ========================================
+    function normalizeConfidence(value) {
+        const v = String(value || '').trim().toUpperCase();
+        if (v === 'ALTA' || v === 'MEDIA' || v === 'BAJA') return v;
+        return 'MEDIA';
+    }
+
+    function getConfidenceBadgeClass(confidence) {
+        const c = normalizeConfidence(confidence);
+        if (c === 'ALTA') return 'confidence-alta';
+        if (c === 'BAJA') return 'confidence-baja';
+        return 'confidence-media';
+    }
+
+    function isPlainObject(value) {
+        return !!value && typeof value === 'object' && !Array.isArray(value);
+    }
+
+    function isEmptyPlainObject(value) {
+        return isPlainObject(value) && Object.keys(value).length === 0;
+    }
+
+    function countDocsByConfidence(docs) {
+        const counts = { ALTA: 0, MEDIA: 0, BAJA: 0 };
+        if (!isPlainObject(docs)) return counts;
+
+        Object.values(docs).forEach((codesObj) => {
+            if (!isPlainObject(codesObj)) return;
+            Object.values(codesObj).forEach((docList) => {
+                if (!Array.isArray(docList)) return;
+                docList.forEach((doc) => {
+                    const c = normalizeConfidence(doc?.confidence);
+                    counts[c] = (counts[c] || 0) + 1;
+                });
+            });
+        });
+
+        return counts;
+    }
+
+    function renderDocsSummaryFromCounts(counts) {
+        DOM.checklistSummary.innerHTML = `
+            <span class="stat-present">${counts.ALTA} ALTA</span> / 
+            <span class="stat-media">${counts.MEDIA} MEDIA</span> /
+            <span class="stat-missing">${counts.BAJA} BAJA</span>
+        `;
+    }
+
+    function renderLeftPanelMessage(message) {
+        DOM.checklistSummary.innerHTML = '';
+        DOM.checklistContainer.innerHTML = `
+            <ul>
+                <li class="checklist-item empty-folder-message">
+                    <div class="item-header empty-message">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="color: var(--text-tertiary); margin-right: 8px;">
+                            <path d="M13 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V9z"></path>
+                            <polyline points="13 2 13 9 20 9"></polyline>
+                        </svg>
+                        <span style="color: var(--text-tertiary); font-style: italic;">${message}</span>
+                    </div>
+                </li>
+            </ul>
+        `;
+    }
+
+    function buildDocsNodes(docs) {
+        if (!isPlainObject(docs)) return [];
+
+        return Object.keys(docs)
+            .sort()
+            .map((categoryKey) => {
+                const codesObj = docs[categoryKey];
+                const codeNodes = isPlainObject(codesObj)
+                    ? Object.keys(codesObj)
+                        .sort()
+                        .map((codeKey) => {
+                            const docList = codesObj[codeKey];
+                            const docNodes = Array.isArray(docList)
+                                ? docList.map((d) => {
+                                    const code = String(d?.code || codeKey || '').trim();
+                                    const name = String(d?.name || '').trim();
+                                    const displayName = name ? `${code} - ${name}` : code;
+                                    return {
+                                        type: 'doc',
+                                        code,
+                                        name,
+                                        confidence: normalizeConfidence(d?.confidence),
+                                        displayName
+                                    };
+                                })
+                                : [];
+
+                            return {
+                                type: 'folder',
+                                name: codeKey,
+                                children: docNodes
+                            };
+                        })
+                    : [];
+
+                return {
+                    type: 'folder',
+                    name: categoryKey,
+                    children: codeNodes
+                };
+            });
+    }
+
+    function createDocsNodeElement(node) {
+        const li = document.createElement('li');
+        li.className = 'checklist-item';
+
+        const isFolder = node.type === 'folder';
+        const isParent = isFolder && Array.isArray(node.children) && node.children.length > 0;
+
+        const toggleIcon = isFolder
+            ? `<svg class="toggle-icon" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"></polyline></svg>`
+            : '<span class="toggle-icon" style="width: 16px;"></span>';
+
+        // Keep alignment with checklist rows (toggle + status icon slots)
+        const statusSpacer = '<span style="width: 16px; height: 16px; display: inline-block; flex-shrink: 0;"></span>';
+
+        const label = isFolder ? String(node.name || '') : String(node.displayName || '');
+
+        const badgeHtml = !isFolder
+            ? `<span class="confidence-badge ${getConfidenceBadgeClass(node.confidence)}">${normalizeConfidence(node.confidence)}</span>`
+            : '';
+
+        const itemHeader = document.createElement('div');
+        itemHeader.className = 'item-header';
+        itemHeader.innerHTML = `
+            ${toggleIcon}
+            ${statusSpacer}
+            <span class="item-name">${label}</span>
+            ${badgeHtml}
+        `;
+
+        li.appendChild(itemHeader);
+
+        if (isFolder) {
+            const childrenContainer = document.createElement('ul');
+            childrenContainer.className = 'item-children';
+
+            (node.children || []).forEach((child) => {
+                childrenContainer.appendChild(createDocsNodeElement(child));
+            });
+
+            li.appendChild(childrenContainer);
+
+            itemHeader.addEventListener('click', () => {
+                childrenContainer.classList.toggle('expanded');
+                const icon = itemHeader.querySelector('.toggle-icon');
+                if (icon) icon.classList.toggle('expanded');
+            });
+        }
+
+        return li;
+    }
+
+    function renderDocsTreeFromNodes(nodes) {
+        DOM.checklistContainer.innerHTML = '';
+        const rootUl = document.createElement('ul');
+        nodes.forEach((n) => rootUl.appendChild(createDocsNodeElement(n)));
+        DOM.checklistContainer.appendChild(rootUl);
+    }
+
+    function buildPseudoChecklistFromDocsNodes(projectName, nodes) {
+        const toChecklistNode = (n) => {
+            if (n.type === 'doc') {
+                return { name: n.displayName, type: 'File', status: 'Present', icaoRef: null };
+            }
+            return {
+                name: n.name,
+                type: 'Folder',
+                status: 'Present',
+                icaoRef: null,
+                children: Array.isArray(n.children) ? n.children.map(toChecklistNode) : []
+            };
+        };
+
+        return {
+            name: projectName || 'Project',
+            type: 'Folder',
+            status: 'Present',
+            icaoRef: null,
+            children: Array.isArray(nodes) ? nodes.map(toChecklistNode) : []
+        };
+    }
+
     function handleFileAction(action, item) {
         switch(action) {
             case 'download':
@@ -454,11 +645,21 @@
         // Initialize services
         initializeServices();
         
-        // Load checklist (still using mock data for now)
-        const checklistData = window.mockChecklistData;
-        const stats = checklistService.load(checklistData);
-        renderChecklistSummary(stats);
-        renderChecklist(checklistData);
+        // Left panel: render from proyectos_lista.docs when available
+        const docs = projectInfo?.docs;
+        if (docs === null || docs === undefined) {
+            renderLeftPanelMessage('Está en procesamiento');
+            checklistService.load(null);
+        } else if (isEmptyPlainObject(docs)) {
+            renderLeftPanelMessage('No hay documentos');
+            checklistService.load(buildPseudoChecklistFromDocsNodes(projectInfo?.name, []));
+        } else {
+            const nodes = buildDocsNodes(docs);
+            const counts = countDocsByConfidence(docs);
+            renderDocsSummaryFromCounts(counts);
+            renderDocsTreeFromNodes(nodes);
+            checklistService.load(buildPseudoChecklistFromDocsNodes(projectInfo?.name, nodes));
+        }
         
         // Load chat history
         const history = chatService.loadHistory();

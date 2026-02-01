@@ -960,7 +960,7 @@
                 serie: serialNumber,
                 type: type,
                 procesados: 0,
-                total_esperados: 99
+                total_esperados: 999
             };
 
             const batch = db.batch();
