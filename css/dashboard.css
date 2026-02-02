@@ -1099,3 +1099,121 @@
     }
 }
 
+/* Mobile Small - 480px */
+@media (max-width: 480px) {
+    .dashboard-container {
+        padding: 0 var(--spacing-sm);
+        margin: var(--spacing-sm) auto;
+    }
+    
+    .stats-section {
+        grid-template-columns: 1fr;
+        gap: var(--spacing-sm);
+    }
+    
+    .stat-card {
+        padding: var(--spacing-md);
+    }
+    
+    .stat-number {
+        font-size: 1.5rem;
+    }
+    
+    .dashboard-header {
+        padding: var(--spacing-md);
+        margin-bottom: var(--spacing-md);
+    }
+    
+    .dashboard-header h2 {
+        font-size: 1.25rem;
+    }
+    
+    .dashboard-header h2::before {
+        height: 18px;
+    }
+    
+    #create-project-btn {
+        width: 100%;
+        justify-content: center;
+    }
+    
+    .filter-controls {
+        width: 100%;
+    }
+    
+    .filter-select {
+        flex: 1;
+        min-width: 0;
+    }
+    
+    .filter-btn {
+        flex-shrink: 0;
+    }
+    
+    .project-card-content {
+        padding: var(--spacing-md);
+        padding-left: calc(var(--spacing-md) + 4px);
+    }
+    
+    .project-card h3 {
+        font-size: 0.9rem;
+    }
+    
+    .project-card-footer {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: var(--spacing-xs);
+    }
+    
+    .project-card-tags {
+        max-width: 100%;
+    }
+    
+    .project-tag {
+        font-size: 0.688rem;
+        padding: 2px 8px;
+    }
+    
+    .modal {
+        width: 100%;
+        max-height: 100vh;
+        border-radius: 0;
+    }
+    
+    .modal-header {
+        padding: var(--spacing-md);
+    }
+    
+    .modal-body {
+        padding: var(--spacing-md);
+    }
+    
+    .modal-footer {
+        padding: var(--spacing-md);
+        flex-direction: column;
+    }
+    
+    .modal-footer .btn {
+        width: 100%;
+    }
+    
+    .notification-panel {
+        position: fixed;
+        top: 56px;
+        left: 0;
+        right: 0;
+        width: 100%;
+        max-height: calc(100vh - 56px);
+        border-radius: 0;
+    }
+    
+    .drop-zone {
+        padding: var(--spacing-lg);
+    }
+    
+    .drop-zone p {
+        font-size: 0.813rem;
+    }
+}
+
+
