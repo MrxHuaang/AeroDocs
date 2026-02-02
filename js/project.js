@@ -19,6 +19,14 @@
         checklistContainer: document.getElementById('checklist-container'),
         projectNameBreadcrumb: document.getElementById('project-name-breadcrumb'),
         checklistSummary: document.getElementById('checklist-summary'),
+        checklistProgressFill: document.getElementById('checklist-progress-fill'),
+        checklistProgressText: document.getElementById('checklist-progress-text'),
+        checklistSearch: document.getElementById('checklist-search'),
+        filterAll: document.getElementById('filter-all'),
+        filterPresent: document.getElementById('filter-present'),
+        filterMissing: document.getElementById('filter-missing'),
+        expandAllBtn: document.getElementById('expand-all-btn'),
+        collapseAllBtn: document.getElementById('collapse-all-btn'),
         
         // Chat
         chatMessagesContainer: document.getElementById('chat-messages'),
@@ -32,6 +40,10 @@
         exportChatBtn: document.getElementById('export-chat-btn'),
         clearChatBtn: document.getElementById('clear-chat-btn')
     };
+
+    // Current filter state
+    let currentFilter = 'all';
+    let currentSearchTerm = '';
 
     // ========================================
     // SERVICES INITIALIZATION
@@ -85,8 +97,42 @@
     // ========================================
     // UI RENDERING - CHAT
     // ========================================
-    function scrollChatToBottom() {
-        DOM.chatMessagesContainer.scrollTop = DOM.chatMessagesContainer.scrollHeight;
+    function scrollChatToBottom(instant = false) {
+        // Use requestAnimationFrame to ensure DOM has updated
+        requestAnimationFrame(() => {
+            // Small delay to ensure content is rendered
+            setTimeout(() => {
+                if (instant) {
+                    // Instant scroll without animation
+                    DOM.chatMessagesContainer.scrollTop = DOM.chatMessagesContainer.scrollHeight;
+                } else {
+                    // Smooth scroll with animation
+                    DOM.chatMessagesContainer.scrollTo({
+                        top: DOM.chatMessagesContainer.scrollHeight,
+                        behavior: 'smooth'
+                    });
+                }
+            }, 50);
+        });
+    }
+
+    // Force scroll to bottom (used on page load)
+    function forceScrollToBottom() {
+        // Multiple attempts to ensure scroll works after content is fully loaded
+        const scrollToEnd = () => {
+            if (DOM.chatMessagesContainer) {
+                DOM.chatMessagesContainer.scrollTop = DOM.chatMessagesContainer.scrollHeight;
+            }
+        };
+        
+        // Immediate scroll
+        scrollToEnd();
+        
+        // Multiple delayed scrolls to handle async content loading
+        setTimeout(scrollToEnd, 100);
+        setTimeout(scrollToEnd, 300);
+        setTimeout(scrollToEnd, 500);
+        setTimeout(scrollToEnd, 800);
     }
 
     function renderMessage(message, scroll = true) {
@@ -106,18 +152,43 @@
     function renderChatHistory(messages) {
         DOM.chatMessagesContainer.innerHTML = '';
         messages.forEach(msg => renderMessage(msg, false));
-        scrollChatToBottom();
+        // Force scroll to bottom after loading history
+        forceScrollToBottom();
     }
 
     // ========================================
     // UI RENDERING - CHECKLIST
     // ========================================
+    
+    // SVG Icons by type
+    const TYPE_ICONS = {
+        Aircraft: `<svg class="type-icon type-aircraft" xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17.8 19.2 16 11l3.5-3.5C21 6 21.5 4 21 3c-1-.5-3 0-4.5 1.5L13 8 4.8 6.2c-.5-.1-.9.1-1.1.5l-.3.5c-.2.5-.1 1 .3 1.3L9 12l-2 3H4l-1 1 3 2 2 3 1-1v-3l3-2 3.5 5.3c.3.4.8.5 1.3.3l.5-.2c.4-.3.6-.7.5-1.2z"/></svg>`,
+        Engine: `<svg class="type-icon type-engine" xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>`,
+        Folder: `<svg class="type-icon type-folder" xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/></svg>`,
+        PDF: `<svg class="type-icon type-pdf" xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><polyline points="10 9 9 9 8 9"/></svg>`,
+        File: `<svg class="type-icon type-file" xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M13 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V9z"/><polyline points="13 2 13 9 20 9"/></svg>`,
+        'Landing Gear': `<svg class="type-icon type-landing-gear" xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="20" r="2"/><path d="M12 2v14"/><path d="m17 7-5 5-5-5"/></svg>`,
+        APU: `<svg class="type-icon type-apu" xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="1" y="6" width="18" height="12" rx="2" ry="2"/><line x1="23" y1="13" x2="23" y2="11"/><line x1="11" y1="6" x2="11" y2="18"/></svg>`
+    };
+
+    function getTypeIcon(type) {
+        return TYPE_ICONS[type] || TYPE_ICONS.Folder;
+    }
+
     function renderChecklistSummary(stats) {
+        // Update text summary
         DOM.checklistSummary.innerHTML = `
-            <span class="stat-present">${stats.present} present</span> / 
+            <span class="stat-present">${stats.present} present</span>
             <span class="stat-missing">${stats.missing} missing</span>
-            <span class="stat-percentage">(${stats.percentage}% complete)</span>
         `;
+        
+        // Update progress bar
+        if (DOM.checklistProgressFill) {
+            DOM.checklistProgressFill.style.width = `${stats.percentage}%`;
+        }
+        if (DOM.checklistProgressText) {
+            DOM.checklistProgressText.textContent = `${stats.percentage}%`;
+        }
     }
 
     // ========================================
@@ -325,10 +396,28 @@
         }
     }
 
-    function createChecklistItemElement(item, parentList = null) {
+    // Count missing items in children
+    function countMissingChildren(item) {
+        if (!item.children || item.children.length === 0) {
+            return item.status === 'Missing' ? 1 : 0;
+        }
+        let count = 0;
+        for (const child of item.children) {
+            if (child.status === 'Missing') count++;
+            count += countMissingChildren(child);
+        }
+        return count;
+    }
+
+    function createChecklistItemElement(item, parentList = null, isTopLevel = false) {
         const li = document.createElement('li');
         li.className = 'checklist-item';
+        if (isTopLevel) {
+            li.classList.add('section-card');
+        }
         li.dataset.name = item.name;
+        li.dataset.status = item.status.toLowerCase();
+        li.dataset.type = item.type || 'Folder';
 
         // Check if this is an F 00X folder (expandable with PDF files)
         const isFFolder = item.type === 'Folder' && /^F \d{3}$/.test(item.name);
@@ -336,9 +425,18 @@
         const isFile = item.type === 'File';
         const isPDF = item.type === 'PDF';
         
+        // Count missing children
+        const missingCount = countMissingChildren(item);
+        if (missingCount > 0 && isParent) {
+            li.classList.add('has-missing');
+        }
+        
         const statusIcon = item.status === 'Present' 
             ? `<svg class="status-icon present" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"></path></svg>`
             : `<svg class="status-icon missing" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>`;
+        
+        // Get type icon
+        const typeIcon = getTypeIcon(item.type);
         
         // Show toggle icon for parents with children OR F 00X folders (even if empty)
         const toggleIcon = (isParent || isFFolder)
@@ -384,11 +482,15 @@
 
         const itemHeader = document.createElement('div');
         itemHeader.className = 'item-header' + ((isFile || isPDF) ? ' file-item' : '');
+        if (missingCount > 0 && isParent) {
+            itemHeader.dataset.missingCount = missingCount;
+        }
         if (isFile || isPDF) {
             itemHeader.draggable = true;
         }
         itemHeader.innerHTML = `
             ${toggleIcon}
+            ${typeIcon}
             ${statusIcon}
             <span class="item-name">${item.name}</span>
             ${fileActionsHtml}
@@ -521,8 +623,87 @@
         }
         
         const rootUl = document.createElement('ul');
-        rootUl.appendChild(createChecklistItemElement(checklistData, rootUl));
+        // Pass true for isTopLevel for the root item
+        rootUl.appendChild(createChecklistItemElement(checklistData, rootUl, true));
         DOM.checklistContainer.appendChild(rootUl);
+    }
+
+    // ========================================
+    // SEARCH & FILTER FUNCTIONS
+    // ========================================
+    function handleSearch(searchTerm) {
+        currentSearchTerm = searchTerm.toLowerCase().trim();
+        applyFilters();
+    }
+
+    function handleFilter(filterType) {
+        currentFilter = filterType;
+        
+        // Update active state on filter chips
+        document.querySelectorAll('.filter-chip').forEach(chip => {
+            chip.classList.toggle('active', chip.dataset.filter === filterType);
+        });
+        
+        applyFilters();
+    }
+
+    function applyFilters() {
+        const allItems = DOM.checklistContainer.querySelectorAll('.checklist-item');
+        
+        allItems.forEach(item => {
+            const name = (item.dataset.name || '').toLowerCase();
+            const status = item.dataset.status;
+            
+            let visible = true;
+            
+            // Apply search filter
+            if (currentSearchTerm && !name.includes(currentSearchTerm)) {
+                visible = false;
+            }
+            
+            // Apply status filter
+            if (currentFilter === 'present' && status !== 'present') {
+                visible = false;
+            } else if (currentFilter === 'missing' && status !== 'missing') {
+                visible = false;
+            }
+            
+            item.classList.toggle('hidden', !visible);
+            
+            // Highlight search term in visible items
+            const nameSpan = item.querySelector(':scope > .item-header > .item-name');
+            if (nameSpan && currentSearchTerm && visible) {
+                const originalText = item.dataset.name;
+                const regex = new RegExp(`(${escapeRegExp(currentSearchTerm)})`, 'gi');
+                nameSpan.innerHTML = originalText.replace(regex, '<span class="search-highlight">$1</span>');
+            } else if (nameSpan) {
+                nameSpan.textContent = item.dataset.name;
+            }
+        });
+    }
+
+    function escapeRegExp(string) {
+        return string.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+    }
+
+    function expandAll() {
+        const allChildren = DOM.checklistContainer.querySelectorAll('.item-children');
+        const allToggles = DOM.checklistContainer.querySelectorAll('.toggle-icon');
+        
+        allChildren.forEach(child => child.classList.add('expanded'));
+        allToggles.forEach(toggle => toggle.classList.add('expanded'));
+        
+        window.showToast('All sections expanded', 'info');
+    }
+
+    function collapseAll() {
+        const allChildren = DOM.checklistContainer.querySelectorAll('.item-children');
+        const allToggles = DOM.checklistContainer.querySelectorAll('.toggle-icon');
+        
+        allChildren.forEach(child => child.classList.remove('expanded'));
+        allToggles.forEach(toggle => toggle.classList.remove('expanded'));
+        
+        window.showToast('All sections collapsed', 'info');
     }
 
     // ========================================
@@ -583,15 +764,22 @@
         chatService = new ChatService(storageService, projectId);
         
         // Setup chat callbacks
-        chatService.onMessageReceived = (msg) => renderMessage(msg);
+        chatService.onMessageReceived = (msg) => {
+            renderMessage(msg);
+            // Extra scroll after AI message renders
+            scrollChatToBottom();
+        };
         chatService.onLoadingChange = (loading) => {
             DOM.aiThinkingIndicator.style.display = loading ? 'flex' : 'none';
-            if (loading) scrollChatToBottom();
+            // Always scroll when loading state changes
+            scrollChatToBottom(true); // instant scroll
         };
         chatService.onLoadingTextChange = (text) => {
             if (DOM.aiThinkingText) {
                 DOM.aiThinkingText.textContent = text;
             }
+            // Scroll when loading text changes too
+            scrollChatToBottom(true);
         };
         chatService.onError = (msg) => window.showToast(msg, 'error');
     }
@@ -680,6 +868,28 @@
     DOM.clearChatBtn.addEventListener('click', handleClearChat);
     DOM.exportReportBtn.addEventListener('click', handleExportReport);
     DOM.chatForm.addEventListener('submit', handleChatSubmit);
+    
+    // Checklist controls
+    if (DOM.checklistSearch) {
+        DOM.checklistSearch.addEventListener('input', (e) => handleSearch(e.target.value));
+    }
+    
+    if (DOM.filterAll) {
+        DOM.filterAll.addEventListener('click', () => handleFilter('all'));
+    }
+    if (DOM.filterPresent) {
+        DOM.filterPresent.addEventListener('click', () => handleFilter('present'));
+    }
+    if (DOM.filterMissing) {
+        DOM.filterMissing.addEventListener('click', () => handleFilter('missing'));
+    }
+    
+    if (DOM.expandAllBtn) {
+        DOM.expandAllBtn.addEventListener('click', expandAll);
+    }
+    if (DOM.collapseAllBtn) {
+        DOM.collapseAllBtn.addEventListener('click', collapseAll);
+    }
 
     // Initialize on DOM ready
     document.addEventListener('DOMContentLoaded', initializePage);

@@ -68,10 +68,137 @@
     <main class="project-container">
       <!-- Left Panel: Checklist -->
       <div class="checklist-panel">
+        <!-- Header -->
         <div class="panel-header">
           <h3>ICAO Checklist</h3>
-          <span id="checklist-summary" class="checklist-summary"></span>
+          <div class="panel-actions">
+            <button id="expand-all-btn" class="btn-icon" title="Expand All">
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                width="16"
+                height="16"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="2"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+              >
+                <polyline points="7 13 12 18 17 13"></polyline>
+                <polyline points="7 6 12 11 17 6"></polyline>
+              </svg>
+            </button>
+            <button id="collapse-all-btn" class="btn-icon" title="Collapse All">
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                width="16"
+                height="16"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="2"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+              >
+                <polyline points="17 11 12 6 7 11"></polyline>
+                <polyline points="17 18 12 13 7 18"></polyline>
+              </svg>
+            </button>
+          </div>
         </div>
+
+        <!-- Progress Section -->
+        <div class="checklist-progress-section">
+          <div class="progress-bar-container">
+            <div id="checklist-progress-bar" class="checklist-progress-bar">
+              <div
+                id="checklist-progress-fill"
+                class="checklist-progress-fill"
+              ></div>
+            </div>
+            <span id="checklist-progress-text" class="progress-text">0%</span>
+          </div>
+          <div id="checklist-summary" class="checklist-summary"></div>
+        </div>
+
+        <!-- Search & Filters -->
+        <div class="checklist-controls">
+          <div class="checklist-search">
+            <svg
+              class="search-icon"
+              xmlns="http://www.w3.org/2000/svg"
+              width="16"
+              height="16"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="2"
+              stroke-linecap="round"
+              stroke-linejoin="round"
+            >
+              <circle cx="11" cy="11" r="8"></circle>
+              <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
+            </svg>
+            <input
+              type="text"
+              id="checklist-search"
+              placeholder="Search files..."
+              autocomplete="off"
+            />
+          </div>
+          <div class="checklist-filters">
+            <button
+              id="filter-all"
+              class="filter-chip active"
+              data-filter="all"
+            >
+              All
+            </button>
+            <button
+              id="filter-present"
+              class="filter-chip"
+              data-filter="present"
+            >
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                width="12"
+                height="12"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="3"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+              >
+                <polyline points="20 6 9 17 4 12"></polyline>
+              </svg>
+              Present
+            </button>
+            <button
+              id="filter-missing"
+              class="filter-chip"
+              data-filter="missing"
+            >
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                width="12"
+                height="12"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="3"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+              >
+                <line x1="18" y1="6" x2="6" y2="18"></line>
+                <line x1="6" y1="6" x2="18" y2="18"></line>
+              </svg>
+              Missing
+            </button>
+          </div>
+        </div>
+
+        <!-- Checklist Content -->
         <div id="checklist-container" class="checklist-tree">
           <!-- Checklist will be rendered here by JavaScript -->
         </div>

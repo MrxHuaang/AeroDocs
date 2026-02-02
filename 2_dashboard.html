@@ -33,7 +33,7 @@
           >
             <path d="M22 12h-4l-3 9L9 3l-3 9H2"></path>
           </svg>
-          <span>AeroDocs</span>
+          <span class="logo-text">AERODOCS</span>
         </div>
         <nav class="header-nav">
           <!-- Notifications -->
@@ -272,9 +272,16 @@
             <div class="spinner"></div>
             <div class="processing-loader-content">
               <span id="processing-loader-text">Processing documents...</span>
-              <div id="processing-loader-progress-wrap" class="processing-loader-progress-wrap" style="display: none">
+              <div
+                id="processing-loader-progress-wrap"
+                class="processing-loader-progress-wrap"
+                style="display: none"
+              >
                 <div class="progress-bar">
-                  <div id="processing-loader-progress-fill" class="progress-bar-fill"></div>
+                  <div
+                    id="processing-loader-progress-fill"
+                    class="progress-bar-fill"
+                  ></div>
                 </div>
               </div>
             </div>
@@ -370,14 +377,31 @@
       <div class="modal-content">
         <div class="modal-body modal-alert-body">
           <div class="modal-alert-icon processing-icon" aria-hidden="true">
-            <svg xmlns="http://www.w3.org/2000/svg" width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <svg
+              xmlns="http://www.w3.org/2000/svg"
+              width="40"
+              height="40"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="2"
+              stroke-linecap="round"
+              stroke-linejoin="round"
+            >
               <circle cx="12" cy="12" r="10"></circle>
               <polyline points="12 6 12 12 16 14"></polyline>
             </svg>
           </div>
           <h3 class="modal-alert-title">Project not ready</h3>
-          <p class="modal-alert-message">You can not open this project yet, files are being processed.</p>
-          <button id="processing-blocked-ok-btn" class="btn btn-primary btn-block">OK</button>
+          <p class="modal-alert-message">
+            You can not open this project yet, files are being processed.
+          </p>
+          <button
+            id="processing-blocked-ok-btn"
+            class="btn btn-primary btn-block"
+          >
+            OK
+          </button>
         </div>
       </div>
     </div>
