@@ -308,14 +308,28 @@
         const isFolder = node.type === 'folder';
         const isParent = isFolder && Array.isArray(node.children) && node.children.length > 0;
 
+        // Add data attributes for filtering
+        const label = isFolder ? String(node.name || '') : String(node.displayName || '');
+        li.dataset.name = label;
+        
+        // Map confidence to status for filter compatibility
+        // ALTA = present (high confidence = document found)
+        // MEDIA = present (medium confidence = document found)
+        // BAJA = missing (low confidence = likely not found)
+        if (!isFolder && node.confidence) {
+            const confidence = normalizeConfidence(node.confidence);
+            li.dataset.status = confidence === 'BAJA' ? 'missing' : 'present';
+            li.dataset.confidence = confidence.toLowerCase();
+        } else {
+            li.dataset.status = 'present';
+        }
+
         const toggleIcon = isFolder
             ? `<svg class="toggle-icon" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"></polyline></svg>`
             : '<span class="toggle-icon" style="width: 16px;"></span>';
 
         // Keep alignment with checklist rows (toggle + status icon slots)
         const statusSpacer = '<span style="width: 16px; height: 16px; display: inline-block; flex-shrink: 0;"></span>';
-
-        const label = isFolder ? String(node.name || '') : String(node.displayName || '');
 
         const badgeHtml = !isFolder
             ? `<span class="confidence-badge ${getConfidenceBadgeClass(node.confidence)}">${normalizeConfidence(node.confidence)}</span>`
