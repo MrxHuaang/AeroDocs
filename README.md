@@ -2,18 +2,18 @@
   <img src="https://img.icons8.com/fluency/96/airplane-mode-on.png" alt="AeroDocs Logo" width="96"/>
 </p>
 
-<h1 align="center">✈️ AeroDocs</h1>
+<h1 align="center">AeroDocs</h1>
 
 <p align="center">
-  <strong>The Future of Aviation Document Management</strong>
+  <strong>Aviation Document Management System</strong>
 </p>
 
 <p align="center">
-  <a href="#-features">Features</a> •
-  <a href="#-tech-stack">Tech Stack</a> •
-  <a href="#-getting-started">Getting Started</a> •
-  <a href="#-project-structure">Structure</a> •
-  <a href="#-screenshots">Screenshots</a>
+  <a href="#overview">Overview</a> |
+  <a href="#features">Features</a> |
+  <a href="#technology-stack">Tech Stack</a> |
+  <a href="#getting-started">Getting Started</a> |
+  <a href="#project-structure">Structure</a>
 </p>
 
 <p align="center">
@@ -25,196 +25,168 @@
 
 ---
 
-## 🌟 Overview
+## Overview
 
-**AeroDocs** is a modern, lightweight web application for managing aviation documents. It enables users to upload aircraft documentation (ZIP/RAR), process them, and visualize compliance through a hierarchical ICAO-standard checklist. The app includes an AI-powered assistant for document queries.
+**AeroDocs** is a modern web application designed for aviation document management. The platform enables users to upload aircraft documentation in compressed formats (ZIP/RAR), process them efficiently, and visualize compliance through a hierarchical checklist based on ICAO standards. Additionally, it includes an AI-powered assistant for document-related queries.
 
-> 🛫 _Built for auditors, engineers, and aviation professionals who need to verify aircraft documentation against international standards._
-
----
-
-## ✨ Features
-
-<table>
-<tr>
-<td width="50%">
-
-### 📋 Document Management
-- **Drag & Drop Upload** - Effortlessly upload ZIP/RAR files
-- **Real-time Processing** - Visual progress tracking
-- **Project Organization** - Tag and categorize by airline
-
-</td>
-<td width="50%">
-
-### ✅ ICAO Compliance
-- **Hierarchical Checklist** - Expandable tree structure
-- **Status Tracking** - Present ✓ / Missing ✗ indicators
-- **Detailed References** - Component & ICAO ref mapping
-
-</td>
-</tr>
-<tr>
-<td width="50%">
-
-### 🤖 AI Assistant
-- **Smart Chat Interface** - Context-aware responses
-- **Document Queries** - Ask about your project docs
-- **Real-time Feedback** - Animated typing indicators
-
-</td>
-<td width="50%">
-
-### 🎨 Modern UI/UX
-- **Responsive Design** - Desktop, tablet & mobile
-- **Toast Notifications** - Success, error, info alerts
-- **Smooth Animations** - Polished interactions
-
-</td>
-</tr>
-</table>
+This solution is designed for auditors, engineers, and aviation professionals who require a reliable tool to verify aircraft documentation against international standards.
 
 ---
 
-## 🛠️ Tech Stack
+## Features
 
-| Technology | Purpose |
-|------------|---------|
-| ![HTML5](https://img.shields.io/badge/-HTML5-E34F26?style=flat-square&logo=html5&logoColor=white) | Semantic structure & accessibility |
-| ![CSS3](https://img.shields.io/badge/-CSS3-1572B6?style=flat-square&logo=css3&logoColor=white) | Modern styling with CSS Variables, Flexbox & Grid |
-| ![JavaScript](https://img.shields.io/badge/-JavaScript-F7DF1E?style=flat-square&logo=javascript&logoColor=black) | Vanilla JS - No frameworks needed! |
-| ![SessionStorage](https://img.shields.io/badge/-SessionStorage-4285F4?style=flat-square&logo=google-chrome&logoColor=white) | Lightweight session management |
+### Document Management
+
+- Drag and drop file upload supporting ZIP and RAR formats
+- Real-time processing with visual progress tracking
+- Project organization with tagging and airline categorization
+
+### ICAO Compliance Verification
+
+- Hierarchical checklist with expandable tree structure
+- Status tracking with present/missing indicators
+- Detailed references including component and ICAO reference mapping
+
+### AI Assistant
+
+- Context-aware chat interface for intelligent responses
+- Document-specific queries with real-time feedback
+- Animated typing indicators for enhanced user experience
+
+### User Interface
+
+- Fully responsive design optimized for desktop, tablet, and mobile devices
+- Toast notification system with success, error, and informational alerts
+- Smooth animations and polished interactions
 
 ---
 
-## 🚀 Getting Started
+## Technology Stack
+
+| Technology     | Purpose                                               |
+| -------------- | ----------------------------------------------------- |
+| HTML5          | Semantic structure and accessibility                  |
+| CSS3           | Modern styling with CSS Variables, Flexbox, and Grid  |
+| JavaScript     | Vanilla JS implementation without external frameworks |
+| SessionStorage | Lightweight session management                        |
+
+---
+
+## Getting Started
 
 ### Prerequisites
 
-Just a modern web browser! No npm, no bundlers, no configuration needed.
+A modern web browser is the only requirement. No package managers, bundlers, or additional configuration needed.
 
 ### Installation
 
 ```bash
-# 1. Clone the repository
+# Clone the repository
 git clone https://github.com/your-username/aerodocs.git
 
-# 2. Navigate to project
+# Navigate to the project directory
 cd aerodocs
 
-# 3. Open in browser (or use Live Server)
+# Open in browser (or use a local development server such as Live Server)
 open index.html
 ```
 
-### Quick Start
+### Quick Start Guide
 
-1. **Login** → Click "Sign in with Google" (simulated)
-2. **Create Project** → Click "+ Create New Project"
-3. **Upload** → Drag & drop your ZIP/RAR file
-4. **Explore** → Navigate the ICAO checklist & chat with AI
+1. **Authentication**: Click "Sign in with Google" to access the platform
+2. **Create Project**: Use the "+ Create New Project" button to start a new project
+3. **Upload Documents**: Drag and drop your ZIP or RAR file into the upload area
+4. **Explore**: Navigate through the ICAO checklist and interact with the AI assistant
 
 ---
 
-## 📁 Project Structure
+## Project Structure
 
 ```
 avia-mvp/
-├── 📄 index.html              # Login page
-├── 📄 2_dashboard.html        # Project dashboard
-├── 📄 3_project.html          # Project detail view
+├── index.html              # Login page
+├── 2_dashboard.html        # Project dashboard
+├── 3_project.html          # Project detail view
 │
-├── 📂 css/
-│   ├── 🎨 main.css            # Global styles & variables
-│   ├── 🎨 login.css           # Login page styles
-│   ├── 🎨 dashboard.css       # Dashboard styles
-│   └── 🎨 project.css         # Project view styles
+├── css/
+│   ├── main.css            # Global styles and CSS variables
+│   ├── login.css           # Login page specific styles
+│   ├── dashboard.css       # Dashboard component styles
+│   └── project.css         # Project view styles
 │
-└── 📂 js/
-    ├── ⚙️ main.js             # Utilities (auth, toasts)
-    ├── ⚙️ auth.js             # Authentication logic
-    ├── ⚙️ dashboard.js        # Dashboard functionality
-    ├── ⚙️ project.js          # Project view logic
-    └── 📦 mock-data.js        # Sample data for demo
+└── js/
+    ├── main.js             # Core utilities (authentication, notifications)
+    ├── auth.js             # Authentication logic
+    ├── dashboard.js        # Dashboard functionality
+    ├── project.js          # Project view logic
+    └── mock-data.js        # Sample data for demonstration
 ```
 
 ---
 
-## 🎨 Design System
+## Design System
 
 ### Color Palette
 
-| Color | Hex | Usage |
-|-------|-----|-------|
-| 🔵 Primary | `#2563EB` | Buttons, links, accents |
-| 🌑 Text Primary | `#111827` | Main content |
-| 🌫️ Text Secondary | `#4B5563` | Descriptions |
-| 🟢 Success | `#16A34A` | Present/Completed states |
-| 🔴 Error | `#DC2626` | Missing/Failed states |
-| ⚪ Background | `#F3F4F6` | Page backgrounds |
+| Color          | Hex Code  | Usage                               |
+| -------------- | --------- | ----------------------------------- |
+| Primary        | `#2563EB` | Buttons, links, and accent elements |
+| Text Primary   | `#111827` | Main content text                   |
+| Text Secondary | `#4B5563` | Descriptions and secondary text     |
+| Success        | `#16A34A` | Present and completed states        |
+| Error          | `#DC2626` | Missing and failed states           |
+| Background     | `#F3F4F6` | Page background                     |
 
 ### Responsive Breakpoints
 
-| Device | Breakpoint | Layout |
-|--------|------------|--------|
-| 🖥️ Desktop | `≥900px` | 3-column grid, side-by-side panels |
-| 📱 Tablet | `600-899px` | 2-column grid, stacked panels |
-| 📲 Mobile | `<600px` | Single column, optimized touch targets |
+| Device  | Breakpoint      | Layout                                     |
+| ------- | --------------- | ------------------------------------------ |
+| Desktop | 900px and above | Three-column grid with side-by-side panels |
+| Tablet  | 600px to 899px  | Two-column grid with stacked panels        |
+| Mobile  | Below 600px     | Single column with optimized touch targets |
 
 ---
 
-## 🖼️ Screenshots
+## Roadmap
 
-<details>
-<summary>📸 Click to expand screenshots</summary>
+### Completed Features
 
-### Login Page
-> Clean, centered login with Google authentication
+- Google authentication integration
+- Project CRUD operations
+- Drag and drop file upload
+- ICAO checklist visualization
+- AI chat assistant
+- Responsive design implementation
 
-### Dashboard
-> Grid view of all projects with status badges and quick actions
+### Planned Features
 
-### Project View
-> Split panel: ICAO checklist on left, AI chat on right
-
-</details>
-
----
-
-## 🗺️ Roadmap
-
-- [x] Google authentication (simulated)
-- [x] Project CRUD operations
-- [x] Drag & drop file upload
-- [x] ICAO checklist visualization
-- [x] AI chat assistant
-- [x] Responsive design
-- [ ] Real backend integration
-- [ ] PDF document preview
-- [ ] Export reports to PDF
-- [ ] Dark mode theme
-- [ ] Multi-language support
+- Backend API integration
+- PDF document preview
+- Report export functionality (PDF format)
+- Dark mode theme
+- Multi-language support
 
 ---
 
-## 🤝 Contributing
+## Contributing
 
-Contributions are welcome! Feel free to:
+Contributions are welcome. To contribute to this project:
 
-1. 🍴 Fork the repository
-2. 🌱 Create a feature branch (`git checkout -b feature/amazing-feature`)
-3. 💾 Commit changes (`git commit -m 'Add amazing feature'`)
-4. 📤 Push to branch (`git push origin feature/amazing-feature`)
-5. 🔃 Open a Pull Request
-
----
-
-## 📜 License
-
-This project is licensed under the **MIT License** - see the [LICENSE](LICENSE) file for details.
+1. Fork the repository
+2. Create a feature branch (`git checkout -b feature/new-feature`)
+3. Commit your changes (`git commit -m 'Add new feature'`)
+4. Push to the branch (`git push origin feature/new-feature`)
+5. Open a Pull Request
 
 ---
 
-## 💬 Contact
+## License
+
+This project is licensed under the **MIT License**. See the [LICENSE](LICENSE) file for details.
+
+---
+
+## Contact
 
 <p align="center">
   <a href="mailto:your-email@example.com">
@@ -231,7 +203,7 @@ This project is licensed under the **MIT License** - see the [LICENSE](LICENSE) 
 ---
 
 <p align="center">
-  <sub>Built with ❤️ for the aviation industry</sub>
+  <sub>Developed for the aviation industry</sub>
 </p>
 
 <p align="center">
