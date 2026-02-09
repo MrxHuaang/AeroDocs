@@ -27,8 +27,10 @@
         filterMissing: document.getElementById('filter-missing'),
         expandAllBtn: document.getElementById('expand-all-btn'),
         collapseAllBtn: document.getElementById('collapse-all-btn'),
+        toggleAllBtn: document.getElementById('toggle-all-btn'),
         
         // Chat
+        chatWindow: document.querySelector('.chat-window'),
         chatMessagesContainer: document.getElementById('chat-messages'),
         chatForm: document.getElementById('chat-form'),
         chatInput: document.getElementById('chat-input'),
@@ -38,7 +40,14 @@
         // Buttons
         exportReportBtn: document.getElementById('export-report-btn'),
         exportChatBtn: document.getElementById('export-chat-btn'),
-        clearChatBtn: document.getElementById('clear-chat-btn')
+        clearChatBtn: document.getElementById('clear-chat-btn'),
+        
+        // Validation Dashboard
+        validationDashboard: document.getElementById('validation-dashboard'),
+        sectionsGrid: document.getElementById('sections-grid'),
+        sectionStats: document.getElementById('section-stats'),
+        overallPercentage: document.getElementById('overall-percentage'),
+        overallStatusBadge: document.getElementById('overall-status-badge')
     };
 
     // Current filter state
@@ -49,6 +58,7 @@
     // SERVICES INITIALIZATION
     // ========================================
     let storageService, chatService, checklistService, exportService, projectsService;
+    let validationService = null;
     let projectId = null;
     let projectInfo = null;
     let draggedElement = null;
@@ -102,13 +112,15 @@
         requestAnimationFrame(() => {
             // Small delay to ensure content is rendered
             setTimeout(() => {
+                if (!DOM.chatWindow) return;
+                
                 if (instant) {
                     // Instant scroll without animation
-                    DOM.chatMessagesContainer.scrollTop = DOM.chatMessagesContainer.scrollHeight;
+                    DOM.chatWindow.scrollTop = DOM.chatWindow.scrollHeight;
                 } else {
                     // Smooth scroll with animation
-                    DOM.chatMessagesContainer.scrollTo({
-                        top: DOM.chatMessagesContainer.scrollHeight,
+                    DOM.chatWindow.scrollTo({
+                        top: DOM.chatWindow.scrollHeight,
                         behavior: 'smooth'
                     });
                 }
@@ -120,8 +132,8 @@
     function forceScrollToBottom() {
         // Multiple attempts to ensure scroll works after content is fully loaded
         const scrollToEnd = () => {
-            if (DOM.chatMessagesContainer) {
-                DOM.chatMessagesContainer.scrollTop = DOM.chatMessagesContainer.scrollHeight;
+            if (DOM.chatWindow) {
+                DOM.chatWindow.scrollTop = DOM.chatWindow.scrollHeight;
             }
         };
         
@@ -200,6 +212,12 @@
         return 'MEDIA';
     }
 
+    function getConfidenceLabel(confidence) {
+        const c = normalizeConfidence(confidence);
+        const map = { 'ALTA': 'HIGH', 'MEDIA': 'MEDIUM', 'BAJA': 'LOW' };
+        return map[c] || c;
+    }
+
     function getConfidenceBadgeClass(confidence) {
         const c = normalizeConfidence(confidence);
         if (c === 'ALTA') return 'confidence-alta';
@@ -235,9 +253,9 @@
 
     function renderDocsSummaryFromCounts(counts) {
         DOM.checklistSummary.innerHTML = `
-            <span class="stat-present">${counts.ALTA} ALTA</span> / 
-            <span class="stat-media">${counts.MEDIA} MEDIA</span> /
-            <span class="stat-missing">${counts.BAJA} BAJA</span>
+            <span class="stat-present">${counts.ALTA} HIGH</span> / 
+            <span class="stat-media">${counts.MEDIA} MEDIUM</span> /
+            <span class="stat-missing">${counts.BAJA} LOW</span>
         `;
     }
 
@@ -332,14 +350,21 @@
         const statusSpacer = '<span style="width: 16px; height: 16px; display: inline-block; flex-shrink: 0;"></span>';
 
         const badgeHtml = !isFolder
-            ? `<span class="confidence-badge ${getConfidenceBadgeClass(node.confidence)}">${normalizeConfidence(node.confidence)}</span>`
+            ? `<span class="confidence-badge ${getConfidenceBadgeClass(node.confidence)}">${getConfidenceLabel(node.confidence)}</span>`
             : '';
 
         const itemHeader = document.createElement('div');
         itemHeader.className = 'item-header';
+        
+        // Folder Icon
+        const folderIcon = isFolder 
+             ? `<svg class="type-icon type-folder" xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="margin-right: 4px;"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/></svg>`
+             : '';
+
         itemHeader.innerHTML = `
             ${toggleIcon}
-            ${statusSpacer}
+            ${folderIcon}
+            ${!isFolder ? statusSpacer : ''}
             <span class="item-name">${label}</span>
             ${badgeHtml}
         `;
@@ -642,6 +667,46 @@
         DOM.checklistContainer.appendChild(rootUl);
     }
 
+    /**
+     * Update checklist progress bar based on loaded data
+     */
+    function updateChecklistProgress() {
+        if (!checklistService) return;
+        
+        const stats = checklistService.getStats();
+        const percentage = stats.percentage || 0;
+        
+        const container = document.querySelector('.checklist-progress-section');
+        // Retrieve or create the discreet completion element
+        let discreetBadge = document.getElementById('checklist-complete-badge');
+        
+        if (percentage === 100) {
+            // Hide the bar container
+            if (DOM.checklistProgressFill) {
+                DOM.checklistProgressFill.parentElement.parentElement.style.display = 'none';
+            }
+            // Remove badge if it exists (cleanup)
+            if (discreetBadge) {
+                discreetBadge.remove();
+            }
+        } else {
+            // Show the bar container
+            if (DOM.checklistProgressFill) {
+                DOM.checklistProgressFill.parentElement.parentElement.style.display = 'flex';
+                DOM.checklistProgressFill.style.width = percentage + '%';
+            }
+            
+            if (DOM.checklistProgressText) {
+                DOM.checklistProgressText.textContent = percentage + '%';
+            }
+            
+             // Hide discreet message if exists
+            if (discreetBadge) {
+                discreetBadge.remove();
+            }
+        }
+    }
+
     // ========================================
     // SEARCH & FILTER FUNCTIONS
     // ========================================
@@ -748,16 +813,51 @@
         }
     }
 
-    function handleExportChat() {
-        const projectName = projectInfo?.name || 'Project';
-        const result = exportService.exportChatHistory(chatService, projectId, projectName);
-        window.showToast(result.message, result.success ? 'success' : 'error');
+    async function handleExportChat() {
+        if (!projectInfo) {
+            window.showToast('No project info available', 'error');
+            return;
+        }
+
+        const history = chatService.getHistory();
+        if (!history || history.length === 0) {
+            window.showToast('No chat history to export', 'warning');
+            return;
+        }
+
+        try {
+            window.showToast('Generating Chat PDF...', 'info');
+            await reportService.generateChatReport(projectInfo, history);
+            window.showToast('Chat report generated successfully', 'success');
+        } catch (error) {
+            console.error('Chat export failed:', error);
+            window.showToast('Failed to generate chat report', 'error');
+        }
     }
 
-    function handleExportReport() {
-        const projectName = projectInfo?.name || 'Project';
-        const result = exportService.exportChecklistReport(checklistService, projectId, projectName);
-        window.showToast(result.message, result.success ? 'success' : 'error');
+    async function handleExportReport() {
+        if (!projectInfo) {
+            window.showToast('No project info available', 'error');
+            return;
+        }
+
+        try {
+            window.showToast('Generating PDF Report...', 'info');
+            
+            const docs = projectInfo.docs || {};
+            const projectType = projectInfo.type || 'aircraft';
+            
+            // Get latest validation status
+            const validationData = validationService.getProjectStatus(docs, projectType);
+            
+            // Generate PDF
+            await reportService.generateValidationReport(projectInfo, validationData, docs);
+            
+            window.showToast('Report generated successfully', 'success');
+        } catch (error) {
+            console.error('Export failed:', error);
+            window.showToast('Failed to generate report', 'error');
+        }
     }
 
     function handleClearChat() {
@@ -796,6 +896,226 @@
             scrollChatToBottom(true);
         };
         chatService.onError = (msg) => window.showToast(msg, 'error');
+    }
+
+    // ========================================
+    // VALIDATION DASHBOARD RENDERING
+    // ========================================
+    
+    /**
+     * Render the IATA validation dashboard with section cards
+     */
+    function renderValidationDashboard(docs, projectType) {
+        if (!validationService || !DOM.validationDashboard) {
+            console.warn('[Validation] Service or dashboard element not available');
+            return;
+        }
+
+        const projectStatus = validationService.getProjectStatus(docs, projectType);
+        
+        DOM.validationDashboard.style.display = 'block';
+        
+        // Setup toggle click handler (only once)
+        if (!DOM.validationDashboard.dataset.toggleSetup) {
+            const toggleBtn = document.getElementById('validation-toggle');
+            if (toggleBtn) {
+                toggleBtn.addEventListener('click', function() {
+                    DOM.validationDashboard.classList.toggle('collapsed');
+                });
+                DOM.validationDashboard.dataset.toggleSetup = 'true';
+            }
+        }
+        
+        if (DOM.overallPercentage) {
+            if (projectStatus.percentage === 100) {
+                // Hide percentage, show checkmark
+                DOM.overallPercentage.style.display = 'none';
+                DOM.overallPercentage.parentElement.classList.add('all-compliant');
+            } else {
+                DOM.overallPercentage.textContent = projectStatus.percentage + '%';
+                DOM.overallPercentage.style.display = 'block';
+                DOM.overallPercentage.parentElement.classList.remove('all-compliant');
+            }
+        }
+        
+        if (DOM.overallStatusBadge) {
+            if (projectStatus.percentage === 100) {
+                 DOM.overallStatusBadge.className = 'overall-status-badge status-completed';
+                 DOM.overallStatusBadge.innerHTML = '<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg> Compliant';
+            } else {
+                const statusDisplay = validationService.getStatusDisplay(projectStatus.status);
+                DOM.overallStatusBadge.className = 'overall-status-badge ' + statusDisplay.cssClass;
+                DOM.overallStatusBadge.textContent = statusDisplay.label;
+            }
+        }
+        
+        renderSectionCards(projectStatus.sections, projectType);
+        renderSectionStats(projectStatus.sectionCounts);
+    }
+    
+    function renderSectionCards(sections, projectType) {
+        if (!DOM.sectionsGrid) return;
+        
+        DOM.sectionsGrid.innerHTML = '';
+        
+        Object.entries(sections).forEach(function([sectionCode, sectionResult]) {
+            var sectionInfo = validationService.getSectionInfo(sectionCode);
+            if (!sectionInfo || !sectionResult.applicable) return;
+            
+            var statusDisplay = validationService.getStatusDisplay(sectionResult.status);
+            
+            var card = document.createElement('div');
+            card.className = 'section-card';
+            card.dataset.section = sectionCode;
+            card.title = sectionResult.present + ' de ' + sectionResult.total + ' documentos';
+            
+            // Premium row layout with progress bar
+            card.innerHTML = 
+                '<span class="section-code">' + sectionCode + '</span>' +
+                '<div class="section-info">' +
+                    '<div class="section-name">' + sectionInfo.name + '</div>' +
+                    '<div class="section-progress-bar">' +
+                        '<div class="section-progress-fill ' + statusDisplay.cssClass + '" style="width: ' + sectionResult.percentage + '%"></div>' +
+                    '</div>' +
+                '</div>' +
+                '<span class="section-percentage ' + statusDisplay.cssClass + '">' + sectionResult.percentage + '%</span>';
+            
+            card.addEventListener('click', function() {
+                showSectionDetail(sectionCode, sectionInfo, sectionResult);
+            });
+            
+            DOM.sectionsGrid.appendChild(card);
+        });
+    }
+    
+    function renderSectionStats(counts) {
+        if (!DOM.sectionStats) return;
+        
+        DOM.sectionStats.innerHTML = 
+            '<div class="stat-item completed"><span class="stat-value">' + counts.completed + '</span><span class="stat-label">Completed</span></div>' +
+            '<div class="stat-item incomplete"><span class="stat-value">' + counts.incomplete + '</span><span class="stat-label">Incomplete</span></div>' +
+            '<div class="stat-item non-compliant"><span class="stat-value">' + counts.nonCompliant + '</span><span class="stat-label">Non-Compliant</span></div>' +
+            '<div class="stat-item"><span class="stat-value">' + counts.total + '</span><span class="stat-label">Total</span></div>';
+    }
+    
+    function showSectionDetail(sectionCode, sectionInfo, sectionResult) {
+        // Get details using the helper we just added
+        const docs = validationService.getSectionDetails(sectionCode, projectInfo.docs || {});
+        
+        // Create Modal HTML
+        const modalId = 'iata-detail-modal';
+        let modalOverlay = document.getElementById(modalId);
+        
+        if (!modalOverlay) {
+            modalOverlay = document.createElement('div');
+            modalOverlay.id = modalId;
+            modalOverlay.className = 'iata-modal-overlay';
+            document.body.appendChild(modalOverlay);
+        }
+        
+        const statusDisplay = validationService.getStatusDisplay(sectionResult.status);
+        
+        modalOverlay.innerHTML = `
+            <div class="iata-modal-container">
+                <div class="iata-modal-header">
+                    <div class="iata-header-content">
+                        <div class="iata-modal-title">
+                            ${sectionInfo.name}
+                        </div>
+                        <div class="iata-modal-subtitle">${sectionCode} • ${sectionResult.present}/${sectionResult.total} Documents</div>
+                    </div>
+                    <button class="iata-modal-close">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
+                    </button>
+                </div>
+                
+                <div class="iata-modal-body">
+                    <div class="iata-status-bar ${sectionResult.status === 'COMPLETED' ? 'status-success' : 'status-warning'}">
+                        <div class="status-icon-large">
+                            ${sectionResult.status === 'COMPLETED' 
+                                ? '<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path><polyline points="22 4 12 14.01 9 11.01"></polyline></svg>'
+                                : '<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="8" x2="12" y2="12"></line><line x1="12" y1="16" x2="12.01" y2="16"></line></svg>'
+                            }
+                        </div>
+                        <div class="status-message">
+                            <strong>${sectionResult.status === 'COMPLETED' ? 'Section Compliant' : 'Attention Required'}</strong>
+                            <span>${sectionResult.status === 'COMPLETED' ? 'All mandatory documents have been uploaded.' : 'Some mandatory documents are missing.'}</span>
+                        </div>
+                    </div>
+
+                    <div class="iata-table-container">
+                        <table class="iata-doc-table">
+                            <thead>
+                                <tr>
+                                    <th style="width: 40px;"></th>
+                                    <th>Document Name</th>
+                                    <th>Code</th>
+                                    <th>Requirement</th>
+                                    <th>Status</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                ${docs.map(doc => {
+                                    const isPresent = doc.status === 'PRESENT';
+                                    const isCritical = doc.status === 'CRITICAL_MISSING';
+                                    
+                                    let statusBadge = '';
+                                    if (isPresent) {
+                                        statusBadge = '<span class="status-pill pill-success">Uploaded</span>';
+                                    } else {
+                                        statusBadge = '<span class="status-pill pill-error">Missing</span>';
+                                    }
+                                    
+                                    let requirementBadge = '';
+                                    if (doc.critical) {
+                                        requirementBadge = '<span class="req-badge req-mandatory">Mandatory</span>';
+                                    } else {
+                                        requirementBadge = '<span class="req-badge req-secondary">Recommended</span>';
+                                    }
+                                    
+                                    return `
+                                        <tr class="${isPresent ? 'row-active' : ''} ${isCritical ? 'row-critical' : ''}">
+                                            <td class="icon-cell">
+                                                ${isPresent 
+                                                    ? '<div class="icon-circle icon-success"><svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg></div>' 
+                                                    : '<div class="icon-circle icon-missing"><svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg></div>'
+                                                }
+                                            </td>
+                                            <td class="name-cell">${doc.name}</td>
+                                            <td class="code-cell"><code>${doc.code}</code></td>
+                                            <td>${requirementBadge}</td>
+                                            <td>${statusBadge}</td>
+                                        </tr>
+                                    `;
+                                }).join('')}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        `;
+        
+        // Show Modal
+        requestAnimationFrame(() => {
+            modalOverlay.classList.add('active');
+        });
+        
+        // Close Handlers
+        const closeBtn = modalOverlay.querySelector('.iata-modal-close');
+        
+        const closeModal = () => {
+            modalOverlay.classList.remove('active');
+            setTimeout(() => {
+                if (modalOverlay.parentNode) {
+                    modalOverlay.parentNode.removeChild(modalOverlay);
+                }
+            }, 300);
+        };
+        
+        closeBtn.onclick = closeModal;
+        modalOverlay.onclick = (e) => {
+            if (e.target === modalOverlay) closeModal();
+        };
     }
 
     async function initializePage() {
@@ -847,13 +1167,21 @@
         // Initialize services
         initializeServices();
         
+        // Initialize validation service
+        if (window.ValidationService) {
+            validationService = new ValidationService();
+            console.log('[Project] Validation service initialized');
+        }
+        
         // Left panel: render from proyectos_lista.docs when available
         const docs = projectInfo?.docs;
+        const projectType = projectInfo?.type || 'aircraft';
+        
         if (docs === null || docs === undefined) {
-            renderLeftPanelMessage('Está en procesamiento');
+            renderLeftPanelMessage('Processing...');
             checklistService.load(null);
         } else if (isEmptyPlainObject(docs)) {
-            renderLeftPanelMessage('No hay documentos');
+            renderLeftPanelMessage('No documents found');
             checklistService.load(buildPseudoChecklistFromDocsNodes(projectInfo?.name, []));
         } else {
             const nodes = buildDocsNodes(docs);
@@ -861,6 +1189,12 @@
             renderDocsSummaryFromCounts(counts);
             renderDocsTreeFromNodes(nodes);
             checklistService.load(buildPseudoChecklistFromDocsNodes(projectInfo?.name, nodes));
+            updateChecklistProgress();
+            
+            // Render IATA Validation Dashboard
+            if (validationService) {
+                renderValidationDashboard(docs, projectType);
+            }
         }
         
         // Load chat history
@@ -898,11 +1232,19 @@
         DOM.filterMissing.addEventListener('click', () => handleFilter('missing'));
     }
     
-    if (DOM.expandAllBtn) {
-        DOM.expandAllBtn.addEventListener('click', expandAll);
-    }
-    if (DOM.collapseAllBtn) {
-        DOM.collapseAllBtn.addEventListener('click', collapseAll);
+    // Toggle all button (single button that alternates between expand/collapse)
+    let allExpanded = false;
+    if (DOM.toggleAllBtn) {
+        DOM.toggleAllBtn.addEventListener('click', () => {
+            if (allExpanded) {
+                collapseAll();
+                DOM.toggleAllBtn.classList.remove('expanded');
+            } else {
+                expandAll();
+                DOM.toggleAllBtn.classList.add('expanded');
+            }
+            allExpanded = !allExpanded;
+        });
     }
 
     // Initialize on DOM ready

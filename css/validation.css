@@ -1,0 +1,498 @@
+/* ========================================
+   VALIDATION DASHBOARD (Collapsible)
+   ======================================== */
+.validation-dashboard {
+    background-color: var(--surface-color);
+    border-radius: var(--border-radius-md);
+    margin-top: var(--spacing-md);
+    border: 1px solid var(--border-color);
+}
+
+.validation-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: var(--spacing-md);
+    cursor: pointer;
+    user-select: none;
+    transition: background-color var(--transition-fast);
+    border-radius: var(--border-radius-md);
+    background-color: var(--surface-color);
+    position: sticky;
+    top: 0;
+    z-index: 10;
+}
+
+.validation-header:hover {
+    background-color: var(--background-color);
+}
+
+.validation-header h2 {
+    font-size: 0.6875rem;
+    font-weight: 700;
+    color: var(--text-primary);
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    margin: 0;
+    display: flex;
+    align-items: center;
+    gap: var(--spacing-xs);
+}
+
+.toggle-chevron {
+    transition: transform var(--transition-normal);
+    color: var(--text-tertiary);
+}
+
+.validation-dashboard:not(.collapsed) .toggle-chevron {
+    transform: rotate(90deg);
+}
+
+/* Collapsible content - improved animation */
+.validation-content {
+    display: grid;
+    grid-template-rows: 0fr;
+    transition: grid-template-rows 0.3s ease-out;
+}
+
+.validation-inner {
+    overflow: hidden;
+}
+
+.validation-dashboard:not(.collapsed) .validation-content {
+    grid-template-rows: 1fr;
+}
+
+.validation-dashboard:not(.collapsed) .validation-inner {
+    padding: var(--spacing-sm) var(--spacing-md) var(--spacing-md);
+    max-height: 280px;
+    overflow-y: auto;
+}
+
+/* Overall Status */
+.overall-status {
+    display: flex;
+    align-items: center;
+    gap: var(--spacing-sm);
+}
+
+.overall-percentage {
+    font-size: 0.875rem;
+    font-weight: 700;
+    color: var(--text-primary);
+}
+
+.overall-status-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    padding: 2px 8px;
+    border-radius: var(--border-radius-full);
+    font-size: 0.625rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.3px;
+    border: 1px solid transparent;
+}
+
+.overall-status-badge::before {
+    content: '';
+    width: 5px;
+    height: 5px;
+    border-radius: 50%;
+    background-color: currentColor;
+}
+
+.overall-status-badge.status-completed {
+    background-color: var(--status-completed-bg);
+    color: var(--status-completed-text);
+    border-color: var(--status-completed-border);
+}
+
+.overall-status-badge.status-incomplete {
+    background-color: var(--status-pending-bg);
+    color: var(--status-pending-text);
+    border-color: var(--status-pending-border);
+}
+
+.overall-status-badge.status-non-compliant {
+    background-color: var(--status-failed-bg);
+    color: var(--status-failed-text);
+    border-color: var(--status-failed-border);
+}
+
+/* ========================================
+   SECTIONS - Premium Row Layout
+   ======================================== */
+.sections-grid {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+}
+
+/* Section Row - Premium Design */
+.section-card {
+    display: flex;
+    align-items: center;
+    gap: var(--spacing-sm);
+    padding: 8px 12px;
+    background: linear-gradient(135deg, var(--background-color) 0%, var(--surface-color) 100%);
+    border-radius: var(--border-radius-md);
+    border: 1px solid var(--border-color);
+    cursor: pointer;
+    transition: all var(--transition-fast);
+}
+
+.section-card:hover {
+    border-color: var(--primary-color);
+    box-shadow: 0 2px 8px rgba(99, 102, 241, 0.12);
+    transform: translateX(2px);
+}
+
+/* Letter badge */
+.section-code {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 26px;
+    height: 26px;
+    border-radius: var(--border-radius-sm);
+    font-weight: 700;
+    font-size: 0.75rem;
+    background: linear-gradient(135deg, var(--primary-color) 0%, #8B5CF6 100%);
+    color: white;
+    flex-shrink: 0;
+}
+
+/* Section name and progress */
+.section-info {
+    flex: 1;
+    min-width: 0;
+}
+
+.section-name {
+    font-size: 0.75rem;
+    font-weight: 600;
+    color: var(--text-primary);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    margin-bottom: 4px;
+}
+
+.section-progress-bar {
+    height: 4px;
+    background-color: var(--border-color);
+    border-radius: var(--border-radius-full);
+    overflow: hidden;
+}
+
+.section-progress-fill {
+    height: 100%;
+    border-radius: var(--border-radius-full);
+    transition: width 0.3s ease;
+}
+
+.section-progress-fill.status-completed {
+    background: linear-gradient(90deg, #10B981 0%, #34D399 100%);
+}
+
+.section-progress-fill.status-incomplete {
+    background: linear-gradient(90deg, #F59E0B 0%, #FBBF24 100%);
+}
+
+.section-progress-fill.status-non-compliant {
+    background: linear-gradient(90deg, #EF4444 0%, #F87171 100%);
+}
+
+/* Section percentage */
+.section-percentage {
+    font-size: 0.6875rem;
+    font-weight: 700;
+    min-width: 32px;
+    text-align: right;
+    flex-shrink: 0;
+}
+
+.section-percentage.status-completed {
+    color: var(--status-completed-text);
+}
+
+.section-percentage.status-incomplete {
+    color: var(--status-pending-text);
+}
+
+.section-percentage.status-non-compliant {
+    color: var(--status-failed-text);
+}
+
+/* Hide unused status icon */
+.section-status-icon {
+    display: none;
+}
+
+/* ========================================
+   SECTION STATS (Compact)
+   ======================================== */
+.section-stats {
+    display: flex;
+    gap: var(--spacing-md);
+    margin-top: var(--spacing-md);
+    padding-top: var(--spacing-sm);
+    border-top: 1px solid var(--border-color-light);
+}
+
+.stat-item {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+}
+
+.stat-value {
+    font-size: 0.75rem;
+    font-weight: 700;
+}
+
+.stat-label {
+    font-size: 0.625rem;
+    color: var(--text-tertiary);
+    text-transform: uppercase;
+}
+
+.stat-item.completed .stat-value {
+    color: var(--status-completed-text);
+}
+
+.stat-item.incomplete .stat-value {
+    color: var(--status-pending-text);
+}
+
+.stat-item.non-compliant .stat-value {
+    color: var(--status-failed-text);
+}
+
+/* ========================================
+   RESPONSIVE
+   ======================================== */
+/* ========================================
+   RESPONSIVE
+   ======================================== */
+@media (max-width: 480px) {
+    .section-name {
+        font-size: 0.6875rem;
+    }
+    
+    .section-code {
+        width: 22px;
+        height: 22px;
+        font-size: 0.625rem;
+    }
+
+    /* Stack validation header elements on very small screens */
+    .validation-header {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: var(--spacing-sm);
+    }
+
+    .overall-status {
+        width: 100%;
+        justify-content: space-between;
+    }
+
+    /* Stack section stats */
+    .section-stats {
+        flex-wrap: wrap;
+        gap: var(--spacing-sm);
+    }
+    
+    .stat-item {
+        flex: 1 1 45%; /* 2 items per row */
+    }
+}
+
+/* ========================================
+   IATA DETAILS MODAL
+   ======================================== */
+.iata-modal-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background-color: rgba(0, 0, 0, 0.5);
+    backdrop-filter: blur(4px);
+    z-index: 1000;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    opacity: 0;
+    visibility: hidden;
+    transition: all 0.3s ease;
+}
+
+.iata-modal-overlay.active {
+    opacity: 1;
+    visibility: visible;
+}
+
+.iata-modal-container {
+    background-color: var(--surface-color);
+    width: 90%;
+    max-width: 600px;
+    max-height: 85vh;
+    border-radius: var(--border-radius-lg);
+    box-shadow: 0 10px 25px rgba(0, 0, 0, 0.2);
+    display: flex;
+    flex-direction: column;
+    transform: translateY(20px);
+    transition: transform 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+    overflow: hidden;
+}
+
+.iata-modal-overlay.active .iata-modal-container {
+    transform: translateY(0);
+}
+
+.iata-modal-header {
+    padding: var(--spacing-md) var(--spacing-lg);
+    border-bottom: 1px solid var(--border-color);
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    background-color: var(--background-color);
+}
+
+.iata-modal-title {
+    font-size: 1rem;
+    font-weight: 700;
+    color: var(--text-primary);
+    display: flex;
+    align-items: center;
+    gap: var(--spacing-sm);
+}
+
+.iata-modal-subtitle {
+    font-size: 0.75rem;
+    color: var(--text-tertiary);
+    font-weight: 400;
+    margin-left: var(--spacing-sm);
+}
+
+.iata-modal-close {
+    background: none;
+    border: none;
+    color: var(--text-tertiary);
+    font-size: 1.5rem;
+    cursor: pointer;
+    line-height: 1;
+    padding: 0;
+    transition: color var(--transition-fast);
+}
+
+.iata-modal-close:hover {
+    color: var(--text-primary);
+}
+
+.iata-modal-body {
+    padding: var(--spacing-lg);
+    overflow-y: auto;
+}
+
+/* Document List */
+.iata-doc-list {
+    display: flex;
+    flex-direction: column;
+    gap: var(--spacing-sm);
+}
+
+.iata-doc-item {
+    display: flex;
+    align-items: center;
+    padding: var(--spacing-sm) var(--spacing-md);
+    background-color: var(--background-color);
+    border: 1px solid var(--border-color-light);
+    border-radius: var(--border-radius-md);
+    transition: all var(--transition-fast);
+}
+
+.iata-doc-item:hover {
+    border-color: var(--border-color);
+    background-color: var(--surface-color);
+}
+
+.iata-doc-item.missing {
+    border-left: 3px solid var(--status-pending-text);
+}
+
+.iata-doc-item.critical-missing {
+    border-left: 3px solid var(--status-failed-text);
+    background-color: rgba(239, 68, 68, 0.05);
+}
+
+.iata-doc-item.present {
+    border-left: 3px solid var(--status-completed-text);
+}
+
+.iata-doc-icon {
+    width: 24px;
+    height: 24px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 50%;
+    margin-right: var(--spacing-md);
+    font-size: 0.75rem;
+    flex-shrink: 0;
+}
+
+.iata-doc-item.present .iata-doc-icon {
+    background-color: rgba(16, 185, 129, 0.1);
+    color: var(--status-completed-text);
+}
+
+.iata-doc-item.missing .iata-doc-icon {
+    background-color: rgba(245, 158, 11, 0.1);
+    color: var(--status-pending-text);
+}
+
+.iata-doc-item.critical-missing .iata-doc-icon {
+    background-color: rgba(239, 68, 68, 0.1);
+    color: var(--status-failed-text);
+}
+
+.iata-doc-info {
+    flex: 1;
+}
+
+.iata-doc-name {
+    font-size: 0.875rem;
+    font-weight: 500;
+    color: var(--text-primary);
+    margin-bottom: 2px;
+}
+
+.iata-doc-code {
+    font-size: 0.75rem;
+    color: var(--text-tertiary);
+    font-family: monospace;
+}
+
+.iata-doc-badge {
+    font-size: 0.625rem;
+    font-weight: 700;
+    padding: 2px 6px;
+    border-radius: var(--border-radius-sm);
+    text-transform: uppercase;
+    margin-left: var(--spacing-sm);
+}
+
+.iata-doc-badge.critical {
+    background-color: var(--status-failed-bg);
+    color: var(--status-failed-text);
+}
+
+.iata-doc-badge.mandatory {
+    background-color: var(--status-pending-bg);
+    color: var(--status-pending-text);
+}

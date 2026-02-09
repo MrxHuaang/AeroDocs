@@ -5,13 +5,17 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Project View - AeroDocs</title>
     <!-- Favicon - soporte multi-navegador -->
-    <link rel="icon" type="image/svg+xml" href="favicon.svg">
-    <link rel="icon" type="image/png" sizes="32x32" href="favicon-32x32.png">
-    <link rel="icon" type="image/png" sizes="16x16" href="favicon-16x16.png">
-    <link rel="shortcut icon" type="image/x-icon" href="favicon.ico">
-    <link rel="apple-touch-icon" sizes="180x180" href="apple-touch-icon.png">
+    <link rel="icon" type="image/svg+xml" href="favicon.svg" />
+    <link rel="icon" type="image/png" sizes="32x32" href="favicon-32x32.png" />
+    <link rel="icon" type="image/png" sizes="16x16" href="favicon-16x16.png" />
+    <link rel="shortcut icon" type="image/x-icon" href="favicon.ico" />
+    <link rel="apple-touch-icon" sizes="180x180" href="apple-touch-icon.png" />
     <link rel="stylesheet" href="css/main.css" />
     <link rel="stylesheet" href="css/project.css" />
+    <link rel="stylesheet" href="css/validation.css" />
+    <!-- jsPDF and AutoTable for PDF Reports -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.29/jspdf.plugin.autotable.min.js"></script>
   </head>
   <body>
     <div id="toast-container"></div>
@@ -72,8 +76,13 @@
         <div class="panel-header">
           <h3>ICAO Checklist</h3>
           <div class="panel-actions">
-            <button id="expand-all-btn" class="btn-icon" title="Expand All">
+            <button
+              id="toggle-all-btn"
+              class="btn-icon"
+              title="Expand/Collapse All"
+            >
               <svg
+                class="toggle-chevron-all"
                 xmlns="http://www.w3.org/2000/svg"
                 width="16"
                 height="16"
@@ -86,22 +95,6 @@
               >
                 <polyline points="7 13 12 18 17 13"></polyline>
                 <polyline points="7 6 12 11 17 6"></polyline>
-              </svg>
-            </button>
-            <button id="collapse-all-btn" class="btn-icon" title="Collapse All">
-              <svg
-                xmlns="http://www.w3.org/2000/svg"
-                width="16"
-                height="16"
-                viewBox="0 0 24 24"
-                fill="none"
-                stroke="currentColor"
-                stroke-width="2"
-                stroke-linecap="round"
-                stroke-linejoin="round"
-              >
-                <polyline points="17 11 12 6 7 11"></polyline>
-                <polyline points="17 18 12 13 7 18"></polyline>
               </svg>
             </button>
           </div>
@@ -201,6 +194,51 @@
         <!-- Checklist Content -->
         <div id="checklist-container" class="checklist-tree">
           <!-- Checklist will be rendered here by JavaScript -->
+        </div>
+
+        <!-- IATA Validation Dashboard (Collapsible) - At bottom -->
+        <div
+          id="validation-dashboard"
+          class="validation-dashboard collapsed"
+          style="display: none"
+        >
+          <div class="validation-header" id="validation-toggle">
+            <h2>
+              <svg
+                class="toggle-chevron"
+                xmlns="http://www.w3.org/2000/svg"
+                width="14"
+                height="14"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="2"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+              >
+                <polyline points="9 18 15 12 9 6"></polyline>
+              </svg>
+              IATA STATUS
+            </h2>
+            <div class="overall-status">
+              <span id="overall-percentage" class="overall-percentage">0%</span>
+              <span
+                id="overall-status-badge"
+                class="overall-status-badge status-incomplete"
+                >Incomplete</span
+              >
+            </div>
+          </div>
+          <div id="validation-content" class="validation-content">
+            <div class="validation-inner">
+              <div id="sections-grid" class="sections-grid">
+                <!-- Section cards will be rendered by JavaScript -->
+              </div>
+              <div class="section-stats" id="section-stats">
+                <!-- Summary stats will be rendered by JavaScript -->
+              </div>
+            </div>
+          </div>
         </div>
       </div>
 
@@ -312,6 +350,10 @@
     <script src="js/services/chat.service.js"></script>
     <script src="js/services/checklist.service.js"></script>
     <script src="js/services/export.service.js"></script>
+    <!-- IATA Validation -->
+    <script src="js/data/iata-documents.js"></script>
+    <script src="js/services/validation.service.js"></script>
+    <script src="js/services/report.service.js"></script>
     <!-- Main page controller -->
     <script src="js/project.js"></script>
   </body>

@@ -129,7 +129,7 @@ class ProjectsService {
             const db = this.firebaseService.getFirestore();
             if (!db) {
                 console.warn('Firestore not initialized');
-                if (this.onError) this.onError('Firebase no está disponible. Verifica tu conexión a internet.');
+                if (this.onError) this.onError('Firebase is not available. Check your internet connection.');
                 return;
             }
 
@@ -162,13 +162,13 @@ class ProjectsService {
                 (error) => {
                     console.error('Error in realtime subscription:', error);
                     this.setLoading(false);
-                    if (this.onError) this.onError('Error al escuchar cambios en proyectos. Verifica tu conexión.');
+                    if (this.onError) this.onError('Error listening for project changes. Check your connection.');
                 }
             );
         } catch (error) {
             console.error('Error starting realtime subscription:', error);
             this.setLoading(false);
-            if (this.onError) this.onError('Error al iniciar tiempo real. Verifica tu conexión.');
+            if (this.onError) this.onError('Error starting realtime updates. Check your connection.');
         }
     }
 
@@ -197,7 +197,7 @@ class ProjectsService {
                 console.warn('Firestore not initialized');
                 this.setLoading(false);
                 if (this.onError) {
-                    this.onError('Firebase no está disponible. Verifica tu conexión a internet.');
+                    this.onError('Firebase is not available. Check your internet connection.');
                 }
                 return [];
             }
@@ -241,9 +241,9 @@ class ProjectsService {
             // Show a user-friendly error message
             if (this.onError) {
                 if (error.message === 'Firebase timeout') {
-                    this.onError('Firebase tardó demasiado en responder. Verifica tu conexión a internet.');
+                    this.onError('Firebase timed out. Check your internet connection.');
                 } else {
-                    this.onError('Error al cargar proyectos. Verifica tu conexión.');
+                    this.onError('Error loading projects. Check your connection.');
                 }
             }
             

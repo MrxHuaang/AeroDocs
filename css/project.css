@@ -84,6 +84,15 @@
     color: var(--primary-color);
 }
 
+/* Toggle All Button Rotation */
+.toggle-chevron-all {
+    transition: transform var(--transition-fast);
+}
+
+.btn-icon.expanded .toggle-chevron-all {
+    transform: rotate(180deg);
+}
+
 /* SMALL BUTTON */
 .btn-sm {
     padding: 6px 12px;
@@ -626,7 +635,6 @@
     display: flex;
     flex-direction: column;
     gap: var(--spacing-md);
-    flex: 1;
 }
 
 .message {
@@ -1253,3 +1261,339 @@
 }
 
 
+
+/* =========================================
+   REDESIGN EXTENSIONS
+   ========================================= */
+
+/* FOLDER ICON & ITEM HEADER UPDATES */
+.item-header .type-icon {
+    transition: color 0.2s ease;
+}
+
+.item-header:hover .type-icon.type-folder {
+    color: var(--primary-color);
+}
+
+/* COMPLIANT STATUS BADGE (DISCREET) */
+.overall-status-badge.status-completed {
+    background-color: #DCFCE7; /* Green 100 */
+    color: #166534; /* Green 800 */
+    border: 1px solid #BBF7D0;
+    padding: 6px 12px;
+    border-radius: 20px;
+    font-size: 0.813rem;
+    font-weight: 600;
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+}
+
+.validation-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+}
+
+.all-compliant .overall-percentage {
+    display: none;
+}
+
+
+/* =========================================
+   NEW MODAL STYLES (PROFESSIONAL)
+   ========================================= */
+
+.iata-modal-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background-color: rgba(15, 23, 42, 0.6); /* Slate 900 / 60% */
+    backdrop-filter: blur(4px);
+    z-index: 1000;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    opacity: 0;
+    visibility: hidden;
+    transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.iata-modal-overlay.active {
+    opacity: 1;
+    visibility: visible;
+}
+
+.iata-modal-container {
+    background-color: #ffffff;
+    width: 90%;
+    max-width: 800px;
+    max-height: 85vh;
+    border-radius: 16px;
+    box-shadow: 
+        0 20px 25px -5px rgba(0, 0, 0, 0.1), 
+        0 8px 10px -6px rgba(0, 0, 0, 0.1);
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+    transform: translateY(20px) scale(0.98);
+    transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+    border: 1px solid #e2e8f0;
+}
+
+.iata-modal-overlay.active .iata-modal-container {
+    transform: translateY(0) scale(1);
+}
+
+/* MODAL HEADER */
+.iata-modal-header {
+    padding: 24px 32px;
+    background-color: #fff;
+    border-bottom: 1px solid #f1f5f9;
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+}
+
+.iata-header-content {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+}
+
+.iata-modal-title {
+    font-size: 1.25rem;
+    font-weight: 700;
+    color: #0f172a; /* Slate 900 */
+    line-height: 1.2;
+}
+
+.iata-modal-subtitle {
+    font-size: 0.875rem;
+    color: #64748b; /* Slate 500 */
+    font-weight: 500;
+}
+
+.iata-modal-close {
+    background: none;
+    border: none;
+    cursor: pointer;
+    color: #94a3b8;
+    padding: 8px;
+    border-radius: 8px;
+    transition: all 0.2s;
+    margin-top: -8px;
+    margin-right: -8px;
+}
+
+.iata-modal-close:hover {
+    background-color: #f1f5f9;
+    color: #0f172a;
+}
+
+/* MODAL BODY */
+.iata-modal-body {
+    padding: 32px;
+    overflow-y: auto;
+    background-color: #f8fafc; /* Slate 50 */
+}
+
+/* STATUS BAR */
+.iata-status-bar {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    padding: 16px 20px;
+    border-radius: 12px;
+    margin-bottom: 24px;
+    border: 1px solid transparent;
+}
+
+.iata-status-bar.status-success {
+    background-color: #F0FDF4;
+    border-color: #BBF7D0;
+    color: #166534;
+}
+
+.iata-status-bar.status-warning {
+    background-color: #FFFBEB; /* Amber 50 */
+    border-color: #FEF3C7; /* Amber 100 */
+    color: #92400E; /* Amber 800 */
+}
+
+.status-icon-large {
+    flex-shrink: 0;
+}
+
+.status-message {
+    display: flex;
+    flex-direction: column;
+}
+
+.status-message strong {
+    font-weight: 700;
+    font-size: 0.938rem;
+    margin-bottom: 2px;
+}
+
+.status-message span {
+    font-size: 0.813rem;
+    opacity: 0.9;
+}
+
+/* DATA TABLE */
+.iata-table-container {
+    background-color: #fff;
+    border-radius: 12px;
+    border: 1px solid #e2e8f0;
+    overflow: hidden;
+    box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
+}
+
+.iata-doc-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 0.875rem;
+}
+
+.iata-doc-table th {
+    background-color: #f8fafc;
+    color: #475569;
+    font-weight: 600;
+    text-align: left;
+    padding: 12px 16px;
+    border-bottom: 1px solid #e2e8f0;
+    font-size: 0.75rem;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+}
+
+.iata-doc-table td {
+    padding: 16px;
+    border-bottom: 1px solid #f1f5f9;
+    color: #334155;
+    vertical-align: middle;
+}
+
+.iata-doc-table tr:last-child td {
+    border-bottom: none;
+}
+
+.iata-doc-table tr:hover td {
+    background-color: #f8fafc;
+}
+
+/* TABLE CELLS */
+.icon-cell {
+    text-align: center;
+    width: 40px;
+    padding-right: 0 !important;
+}
+
+.icon-circle {
+    width: 28px;
+    height: 28px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.icon-success {
+    background-color: #DCFCE7;
+    color: #166534;
+}
+
+.icon-missing {
+    background-color: #FEE2E2;
+    color: #B91C1C;
+}
+
+.name-cell {
+    font-weight: 500;
+    color: #0f172a;
+}
+
+.code-cell code {
+    background-color: #f1f5f9;
+    padding: 4px 6px;
+    border-radius: 4px;
+    font-family: 'Monaco', 'Consolas', monospace;
+    font-size: 0.75rem;
+    color: #64748b;
+    border: 1px solid #e2e8f0;
+}
+
+/* BADGES */
+.status-pill {
+    display: inline-flex;
+    align-items: center;
+    padding: 4px 10px;
+    border-radius: 9999px;
+    font-size: 0.75rem;
+    font-weight: 600;
+    line-height: 1;
+}
+
+.pill-success {
+    background-color: #F0FDF4;
+    color: #15803D;
+    border: 1px solid #DCFCE7;
+}
+
+.pill-error {
+    background-color: #FEF2F2;
+    color: #B91C1C;
+    border: 1px solid #FEE2E2;
+}
+
+.req-badge {
+    text-transform: uppercase;
+    font-size: 0.688rem;
+    font-weight: 700;
+    letter-spacing: 0.025em;
+}
+
+.req-mandatory {
+    color: #EF4444;
+}
+
+.req-secondary {
+    color: #64748b;
+}
+
+.row-critical td {
+    background-color: #FEF2F2;
+}
+
+.row-critical:hover td {
+    background-color: #FEE2E2;
+}
+
+/* CHECKLIST COMPLETE BADGE (MINIMAL) */
+.checklist-complete-badge {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin-bottom: 0;
+}
+
+.complete-icon-wrapper {
+    width: 32px;
+    height: 32px;
+    border-radius: 50%;
+    background-color: #DCFCE7; /* Green 100 */
+    color: #166534; /* Green 800 */
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    box-shadow: 0 1px 2px rgba(0,0,0,0.05);
+    border: 1px solid #BBF7D0;
+    transition: transform 0.2s ease;
+}
+
+.complete-icon-wrapper:hover {
+    transform: scale(1.05);
+}

@@ -112,7 +112,7 @@ class ChatService {
         
         // Set loading text based on whether it's the first message
         if (this.onLoadingTextChange) {
-            const loadingText = this.isFirstMessage ? 'Cargando información' : 'Pensando';
+            const loadingText = this.isFirstMessage ? 'Loading info...' : 'Thinking...';
             this.onLoadingTextChange(loadingText);
         }
 
@@ -139,7 +139,7 @@ class ChatService {
             }
 
             const data = await response.json();
-            const aiText = data.output || 'Lo siento, no pude obtener una respuesta.';
+            const aiText = data.output || 'Sorry, I could not get a response.';
             const aiMessage = { sender: 'ai', text: aiText };
             
             this.conversation.push(aiMessage);
@@ -174,14 +174,14 @@ class ChatService {
 
             const errorMessage = {
                 sender: 'ai',
-                text: 'Lo siento, ocurrió un error al procesar tu solicitud. Por favor, intenta nuevamente.'
+                text: 'Sorry, an error occurred while processing your request. Please try again.'
             };
             
             this.conversation.push(errorMessage);
             this.saveHistory();
 
             if (this.onError) {
-                this.onError('Error al conectar con el asistente AI');
+                this.onError('Error connecting to AI assistant');
             }
 
             if (this.onMessageReceived) {
