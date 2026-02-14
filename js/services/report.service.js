@@ -543,13 +543,91 @@ class ReportService {
                 const senderName = isAI ? 'AERODOCS AI' : 'USER';
                 
                 // Content prep
+                // Content prep & Markdown Rendering
                 doc.setFontSize(9);
-                doc.setFont('helvetica', 'normal');
                 const maxWidth = 180;
-                const textLines = doc.splitTextToSize(msg.text, maxWidth);
-                const blockHeight = (textLines.length * 4.5) + 10;
                 
-                // Page Break Check
+                // Helper to render markdown lines
+                const renderMarkdownLine = (text, startX, startY) => {
+                    let currentY = startY;
+                    const lines = text.split('\n');
+                    
+                    lines.forEach(line => {
+                        let lineText = line.trim();
+                        if (!lineText) {
+                            currentY += 4; // Paragraph spacing
+                            return;
+                        }
+                        
+                        let isHeader = false;
+                        let isList = false;
+                        let indent = 0;
+                        
+                        // Detect Header (###)
+                        if (lineText.startsWith('###')) {
+                            isHeader = true;
+                            doc.setFont('helvetica', 'bold');
+                            doc.setFontSize(10); // Slightly larger
+                            doc.setTextColor(...colors.text);
+                            lineText = lineText.replace(/^#+\s*/, '');
+                            currentY += 2;
+                        } 
+                        // Detect List (* or -)
+                        else if (lineText.startsWith('* ') || lineText.startsWith('- ')) {
+                            isList = true;
+                            doc.setFont('helvetica', 'normal');
+                            doc.setFontSize(9);
+                            doc.setTextColor(...colors.text);
+                            lineText = lineText.replace(/^[\*\-]\s*/, '');
+                            indent = 6;
+                            
+                            // Draw bullet
+                            doc.circle(startX + 2, currentY - 1, 1, 'F');
+                        }
+                        else {
+                            doc.setFont('helvetica', 'normal');
+                            doc.setFontSize(9);
+                            doc.setTextColor(...colors.text);
+                        }
+                        
+                        // Clean bold markers (**) for now to remove raw syntax "bad look"
+                        // Implementing full inline bold with wrapping is complex; 
+                        // stripping symbols is the safest immediate improvement.
+                        lineText = lineText.replace(/\*\*/g, '');
+                        
+                        const wrappedLines = doc.splitTextToSize(lineText, maxWidth - indent);
+                        
+                        wrappedLines.forEach(wLine => {
+                            // Check Page Break within message
+                            if (currentY > 275) {
+                                doc.addPage();
+                                currentY = 20;
+                            }
+                            doc.text(wLine, startX + indent, currentY);
+                            currentY += 5; // Line height
+                        });
+                        
+                        if (isHeader) currentY += 2; // Extra space after header
+                    });
+                    
+                    return currentY; // Return new Y
+                };
+                
+                // Calculate height first (rough approx or dry run? Dry run is safer but slower)
+                // For this MVP, we'll output directly and handle page breaks inline.
+                // NOTE: To draw specific backgrounds per message, we need height. 
+                // Let's simplify: Draw simpler separation instead of block rects if height is dynamic.
+                // OR: First pass to calculate height.
+                
+                // --- Pass 1: Calculate Height ---
+                // We'll just estimate height based on split text to assume background box
+                const plainText = msg.text.replace(/###/g, '').replace(/\*\*/g, ''); 
+                const approxLines = doc.splitTextToSize(plainText, maxWidth).length;
+                // Add explicit newlines count
+                const newLinesCount = (msg.text.match(/\n/g) || []).length;
+                const blockHeight = ((approxLines + newLinesCount) * 5) + 12;
+
+                // Page Break Check (Block start)
                 if (y + blockHeight > 275) {
                     doc.addPage();
                     y = 20;
@@ -567,17 +645,14 @@ class ReportService {
                 doc.setTextColor(...colors.secondary);
                 doc.text(senderName, 18, y + 6);
                 
-                // Message Text
-                doc.setFont('helvetica', 'normal');
-                doc.setFontSize(9);
-                doc.setTextColor(...colors.text);
-                doc.text(textLines, 18, y + 11);
+                // Render Markdown
+                const finalY = renderMarkdownLine(msg.text, 18, y + 11);
                 
                 // Thin separator
                 doc.setDrawColor(...colors.line);
-                doc.line(14, y + blockHeight, 196, y + blockHeight);
+                doc.line(14, finalY + 2, 196, finalY + 2);
                 
-                y += blockHeight;
+                y = finalY + 7;
             });
         }
         
