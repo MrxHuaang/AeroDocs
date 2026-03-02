@@ -9,7 +9,7 @@ class ChatService {
         this.storageService = storageService;
         this.projectId = projectId;
         this.conversation = [];
-        this.webhookUrl = 'https://n8n.srv1026018.hstgr.cloud/webhook/2c2356a8-a5aa-4327-b8c7-7e9e51a8f5b1';
+        this.webhookUrl = 'https://n8n.srv1424602.hstgr.cloud/webhook/2c2356a8-a5aa-4327-b8c7-7e9e51a8f5b1';
         this.isFirstMessage = true;
         
         // Callbacks for UI updates

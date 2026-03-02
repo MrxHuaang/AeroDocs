@@ -111,8 +111,8 @@
     // ========================================
     // N8N WEBHOOK CONFIGURATION
     // ========================================
-    const N8N_FILE_WEBHOOK_URL = 'https://n8n.srv1026018.hstgr.cloud/webhook/849ca1f9-a9b5-4630-b533-42b770a8e9b0';
-    const N8N_UPLOAD_URL_WEBHOOK = 'https://n8n.srv1026018.hstgr.cloud/webhook/generate-upload-url';
+    const N8N_FILE_WEBHOOK_URL = 'https://n8n.srv1424602.hstgr.cloud/webhook/849ca1f9-a9b5-4630-b533-42b770a8e9b0';
+    const N8N_UPLOAD_URL_WEBHOOK = 'https://n8n.srv1424602.hstgr.cloud/webhook/generate-upload-url';
 
     /**
      * Calls the n8n webhook to generate an upload URL for the file.
